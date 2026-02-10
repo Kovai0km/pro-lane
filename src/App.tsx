@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { 
   PageSkeleton, 
   DashboardSkeleton, 
@@ -41,160 +43,68 @@ const DirectMessageList = lazy(() => import("./pages/DirectMessageList"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       refetchOnWindowFocus: false,
       retry: 1,
     },
   },
 });
 
-// Loading wrapper component for better UX
 function LoadingFallback({ type = 'page' }: { type?: 'page' | 'dashboard' | 'project' | 'chat' | 'profile' }) {
   switch (type) {
-    case 'dashboard':
-      return <DashboardSkeleton />;
-    case 'project':
-      return <ProjectSkeleton />;
-    case 'chat':
-      return <ChatSkeleton />;
-    case 'profile':
-      return <ProfileSkeleton />;
-    default:
-      return <PageSkeleton />;
+    case 'dashboard': return <DashboardSkeleton />;
+    case 'project': return <ProjectSkeleton />;
+    case 'chat': return <ChatSkeleton />;
+    case 'profile': return <ProfileSkeleton />;
+    default: return <PageSkeleton />;
   }
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Landing />
-                </Suspense>
-              } />
-              <Route path="/auth" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Auth />
-                </Suspense>
-              } />
-              <Route path="/dashboard" element={
-                <Suspense fallback={<LoadingFallback type="dashboard" />}>
-                  <Dashboard />
-                </Suspense>
-              } />
-              <Route path="/org/:orgId" element={
-                <Suspense fallback={<LoadingFallback type="dashboard" />}>
-                  <Organization />
-                </Suspense>
-              } />
-              <Route path="/org/:orgId/projects" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <ProjectHub />
-                </Suspense>
-              } />
-              <Route path="/org/:orgId/chat" element={
-                <Suspense fallback={<LoadingFallback type="chat" />}>
-                  <Chat />
-                </Suspense>
-              } />
-              <Route path="/org/:orgId/chat/channels" element={
-                <Suspense fallback={<LoadingFallback type="chat" />}>
-                  <ChannelList />
-                </Suspense>
-              } />
-              <Route path="/org/:orgId/chat/dms" element={
-                <Suspense fallback={<LoadingFallback type="chat" />}>
-                  <DirectMessageList />
-                </Suspense>
-              } />
-              <Route path="/project/:projectId" element={
-                <Suspense fallback={<LoadingFallback type="project" />}>
-                  <Project />
-                </Suspense>
-              } />
-              <Route path="/team/:teamId" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Team />
-                </Suspense>
-              } />
-              <Route path="/projects" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <ProjectHub />
-                </Suspense>
-              } />
-              <Route path="/profile" element={
-                <Suspense fallback={<LoadingFallback type="profile" />}>
-                  <Profile />
-                </Suspense>
-              } />
-              <Route path="/u/:username" element={
-                <Suspense fallback={<LoadingFallback type="profile" />}>
-                  <UserProfile />
-                </Suspense>
-              } />
-              <Route path="/billing" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Billing />
-                </Suspense>
-              } />
-              <Route path="/settings" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Settings />
-                </Suspense>
-              } />
-              <Route path="/features" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Features />
-                </Suspense>
-              } />
-              <Route path="/pricing" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Pricing />
-                </Suspense>
-              } />
-              <Route path="/integrations" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Integrations />
-                </Suspense>
-              } />
-              <Route path="/about" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <About />
-                </Suspense>
-              } />
-              <Route path="/careers" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Careers />
-                </Suspense>
-              } />
-              <Route path="/privacy" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Privacy />
-                </Suspense>
-              } />
-              <Route path="/terms" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <Terms />
-                </Suspense>
-              } />
-              <Route path="*" element={
-                <Suspense fallback={<LoadingFallback />}>
-                  <NotFound />
-                </Suspense>
-              } />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Suspense fallback={<LoadingFallback />}><Landing /></Suspense>} />
+                <Route path="/auth" element={<Suspense fallback={<LoadingFallback />}><Auth /></Suspense>} />
+                <Route path="/features" element={<Suspense fallback={<LoadingFallback />}><Features /></Suspense>} />
+                <Route path="/pricing" element={<Suspense fallback={<LoadingFallback />}><Pricing /></Suspense>} />
+                <Route path="/integrations" element={<Suspense fallback={<LoadingFallback />}><Integrations /></Suspense>} />
+                <Route path="/about" element={<Suspense fallback={<LoadingFallback />}><About /></Suspense>} />
+                <Route path="/careers" element={<Suspense fallback={<LoadingFallback />}><Careers /></Suspense>} />
+                <Route path="/privacy" element={<Suspense fallback={<LoadingFallback />}><Privacy /></Suspense>} />
+                <Route path="/terms" element={<Suspense fallback={<LoadingFallback />}><Terms /></Suspense>} />
+                <Route path="/u/:username" element={<Suspense fallback={<LoadingFallback type="profile" />}><UserProfile /></Suspense>} />
+
+                {/* Protected routes */}
+                <Route path="/dashboard" element={<Suspense fallback={<LoadingFallback type="dashboard" />}><ProtectedRoute><Dashboard /></ProtectedRoute></Suspense>} />
+                <Route path="/org/:orgId" element={<Suspense fallback={<LoadingFallback type="dashboard" />}><ProtectedRoute><Organization /></ProtectedRoute></Suspense>} />
+                <Route path="/org/:orgId/projects" element={<Suspense fallback={<LoadingFallback />}><ProtectedRoute><ProjectHub /></ProtectedRoute></Suspense>} />
+                <Route path="/org/:orgId/chat" element={<Suspense fallback={<LoadingFallback type="chat" />}><ProtectedRoute><Chat /></ProtectedRoute></Suspense>} />
+                <Route path="/org/:orgId/chat/channels" element={<Suspense fallback={<LoadingFallback type="chat" />}><ProtectedRoute><ChannelList /></ProtectedRoute></Suspense>} />
+                <Route path="/org/:orgId/chat/dms" element={<Suspense fallback={<LoadingFallback type="chat" />}><ProtectedRoute><DirectMessageList /></ProtectedRoute></Suspense>} />
+                <Route path="/project/:projectId" element={<Suspense fallback={<LoadingFallback type="project" />}><ProtectedRoute><Project /></ProtectedRoute></Suspense>} />
+                <Route path="/team/:teamId" element={<Suspense fallback={<LoadingFallback />}><ProtectedRoute><Team /></ProtectedRoute></Suspense>} />
+                <Route path="/projects" element={<Suspense fallback={<LoadingFallback />}><ProtectedRoute><ProjectHub /></ProtectedRoute></Suspense>} />
+                <Route path="/profile" element={<Suspense fallback={<LoadingFallback type="profile" />}><ProtectedRoute><Profile /></ProtectedRoute></Suspense>} />
+                <Route path="/billing" element={<Suspense fallback={<LoadingFallback />}><ProtectedRoute><Billing /></ProtectedRoute></Suspense>} />
+                <Route path="/settings" element={<Suspense fallback={<LoadingFallback />}><ProtectedRoute><Settings /></ProtectedRoute></Suspense>} />
+
+                <Route path="*" element={<Suspense fallback={<LoadingFallback />}><NotFound /></Suspense>} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
