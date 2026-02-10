@@ -171,7 +171,16 @@ export default function ProfilePage() {
       // Store the path instead of public URL (bucket is private)
       const storagePath = filePath;
 
-      setAvatarUrl(publicUrl);
+      // Generate a signed URL for immediate display
+      const { data: signedData } = await supabase.storage
+        .from('project-files')
+        .createSignedUrl(storagePath, 3600);
+      
+      // Store the path in the database, use signed URL for display
+      setAvatarUrl(storagePath);
+      if (signedData?.signedUrl) {
+        // We'll use the signed URL for display via the useSignedUrl hook
+      }
       toast({
         title: 'Image uploaded',
         description: 'Your profile image has been uploaded. Click Save to apply.',
