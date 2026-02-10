@@ -168,9 +168,8 @@ export default function ProfilePage() {
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-files')
-        .getPublicUrl(filePath);
+      // Store the path instead of public URL (bucket is private)
+      const storagePath = filePath;
 
       setAvatarUrl(publicUrl);
       toast({
