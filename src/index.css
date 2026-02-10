@@ -1,0 +1,254 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ProOrbit.in Design System - Strict Black & White */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    /* Core palette - soft grey shades */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 15%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 15%;
+    
+    --primary: 0 0% 20%;
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 20%;
+    
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 45%;
+    
+    --accent: 0 0% 92%;
+    --accent-foreground: 0 0% 20%;
+    
+    --destructive: 0 0% 35%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 0 0% 75%;
+    --input: 0 0% 92%;
+    --ring: 0 0% 30%;
+    
+    --radius: 4px;
+    
+    /* Custom tokens */
+    --surface-elevated: 0 0% 100%;
+    --surface-hover: 0 0% 96%;
+    --border-subtle: 0 0% 85%;
+    --text-subtle: 0 0% 55%;
+    
+    /* Sidebar - matches page theme */
+    --sidebar-background: 0 0% 96%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-primary: 0 0% 20%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 90%;
+    --sidebar-accent-foreground: 0 0% 15%;
+    --sidebar-border: 0 0% 75%;
+    --sidebar-ring: 0 0% 30%;
+  }
+
+  .dark {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 92%;
+    
+    --card: 0 0% 14%;
+    --card-foreground: 0 0% 92%;
+    
+    --popover: 0 0% 14%;
+    --popover-foreground: 0 0% 92%;
+    
+    --primary: 0 0% 92%;
+    --primary-foreground: 0 0% 10%;
+    
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 92%;
+    
+    --muted: 0 0% 22%;
+    --muted-foreground: 0 0% 60%;
+    
+    --accent: 0 0% 25%;
+    --accent-foreground: 0 0% 92%;
+    
+    --destructive: 0 0% 75%;
+    --destructive-foreground: 0 0% 10%;
+    
+    --border: 0 0% 35%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 80%;
+    
+    --surface-elevated: 0 0% 16%;
+    --surface-hover: 0 0% 20%;
+    --border-subtle: 0 0% 30%;
+    --text-subtle: 0 0% 55%;
+    
+    /* Sidebar - matches page theme */
+    --sidebar-background: 0 0% 12%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 0 0% 92%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 20%;
+    --sidebar-accent-foreground: 0 0% 92%;
+    --sidebar-border: 0 0% 35%;
+    --sidebar-ring: 0 0% 80%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Outfit', system-ui, sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  
+  code, pre, .mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer components {
+  /* Page container */
+  .page-container {
+    @apply min-h-screen w-full;
+  }
+  
+  /* Section spacing */
+  .section {
+    @apply py-16 md:py-24;
+  }
+  
+  /* Card with border */
+  .card-bordered {
+    @apply border-2 border-foreground bg-card p-6;
+  }
+  
+  /* Status badges */
+  .status-badge {
+    @apply inline-flex items-center px-2 py-1 text-xs font-medium uppercase tracking-wider border border-foreground;
+  }
+  
+  .status-badge-pending {
+    @apply bg-background text-foreground;
+  }
+  
+  .status-badge-in-progress {
+    @apply bg-foreground text-background;
+  }
+  
+  .status-badge-review {
+    @apply bg-muted text-foreground border-dashed;
+  }
+  
+  .status-badge-completed {
+    @apply bg-foreground text-background;
+  }
+  
+  /* Input focus states */
+  .input-focus {
+    @apply focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:ring-offset-background;
+  }
+  
+  /* Link styles */
+  .link-underline {
+    @apply underline underline-offset-4 hover:no-underline transition-all;
+  }
+  
+  /* Grid patterns */
+  .grid-pattern {
+    background-image: 
+      linear-gradient(hsl(var(--border-subtle)) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border-subtle)) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+}
+
+@layer utilities {
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Animation utilities */
+  .animate-in-up {
+    animation: slideInUp 0.5s ease-out forwards;
+  }
+  
+  .animate-in-fade {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+  
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-0.5;
+  }
+  
+  /* Border utilities */
+  .border-thick {
+    border-width: 2px;
+  }
+  
+  .border-extra-thick {
+    border-width: 3px;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--foreground));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Selection styling */
+::selection {
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+}
