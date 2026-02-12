@@ -290,7 +290,7 @@ export function FileCommentsPanel({
                   <div className={cn(
                     "rounded-lg px-3 py-2 text-sm",
                     comment.user_id === user?.id
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-secondary text-secondary-foreground"
                       : "bg-muted"
                   )}>
                     {renderContent(comment.content, comment.timecode)}
