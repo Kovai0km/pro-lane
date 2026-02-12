@@ -97,6 +97,12 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
   const [showAllChannels, setShowAllChannels] = useState(false);
   const [showAllDMs, setShowAllDMs] = useState(false);
 
+  // @mention state
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState('');
+  const [orgMembers, setOrgMembers] = useState<Profile[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get active channel from URL
@@ -113,11 +119,25 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
   // Fetch initial data
   useEffect(() => {
     if (user && orgId) {
-      fetchTeams();
-      fetchDirectMessages();
-      setLoading(false);
+      Promise.all([fetchTeams(), fetchDirectMessages(), fetchOrgMembers()]).finally(() => setLoading(false));
     }
   }, [user, orgId]);
+
+  // Fetch org members for @mention
+  const fetchOrgMembers = async () => {
+    const { data: members } = await supabase
+      .from('organization_members')
+      .select('user_id')
+      .eq('organization_id', orgId);
+    if (members && members.length > 0) {
+      const userIds = members.map(m => m.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, avatar_url, username')
+        .in('id', userIds);
+      if (profiles) setOrgMembers(profiles);
+    }
+  };
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -342,17 +362,53 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
     }
   };
 
+  const detectMentions = (content: string): string[] => {
+    const mentionRegex = /@(\w+(?:\s\w+)?)/g;
+    const mentions: string[] = [];
+    let match;
+    while ((match = mentionRegex.exec(content)) !== null) {
+      mentions.push(match[1]);
+    }
+    return mentions;
+  };
+
+  const createMentionNotifications = async (content: string, messageId?: string) => {
+    if (!user) return;
+    const mentionNames = detectMentions(content);
+    if (mentionNames.length === 0) return;
+
+    const senderName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Someone';
+
+    for (const name of mentionNames) {
+      const mentioned = orgMembers.find(
+        m => m.full_name?.toLowerCase() === name.toLowerCase() ||
+             m.username?.toLowerCase() === name.toLowerCase() ||
+             m.email.split('@')[0].toLowerCase() === name.toLowerCase()
+      );
+      if (mentioned && mentioned.id !== user.id) {
+        await supabase.from('notifications').insert({
+          user_id: mentioned.id,
+          type: 'mention',
+          title: 'You were mentioned',
+          message: `${senderName} mentioned you in chat: "${content.slice(0, 80)}${content.length > 80 ? '...' : ''}"`,
+          link: `/org/${orgId}?tab=chat&channel=${activeChannel?.type}&id=${activeChannel?.id}`,
+        });
+      }
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !activeChannel || !user) return;
 
     setSending(true);
+    const content = newMessage.trim();
     try {
       if (activeChannel.type === 'dm') {
         const { error } = await supabase.from('messages').insert({
           sender_id: user.id,
           receiver_id: activeChannel.id,
-          content: newMessage.trim(),
+          content,
         });
         if (error) throw error;
       } else if (activeChannel.type === 'team') {
@@ -360,11 +416,14 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
           sender_id: user.id,
           team_id: activeChannel.id,
           receiver_id: user.id,
-          content: newMessage.trim(),
+          content,
         });
         if (error) throw error;
       }
       setNewMessage('');
+      setMentionOpen(false);
+      // Create mention notifications in background
+      createMentionNotifications(content);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -374,6 +433,48 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleMessageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+    const cursorPos = e.target.selectionStart || 0;
+    const textBeforeCursor = value.slice(0, cursorPos);
+    const atMatch = textBeforeCursor.match(/@(\w*)$/);
+    if (atMatch) {
+      setMentionSearch(atMatch[1]);
+      setMentionOpen(true);
+    } else {
+      setMentionOpen(false);
+    }
+  };
+
+  const handleMentionSelect = (member: Profile) => {
+    const cursorPos = inputRef.current?.selectionStart || newMessage.length;
+    const textBefore = newMessage.slice(0, cursorPos);
+    const textAfter = newMessage.slice(cursorPos);
+    const atIndex = textBefore.lastIndexOf('@');
+    const name = member.full_name || member.username || member.email.split('@')[0];
+    setNewMessage(textBefore.slice(0, atIndex) + `@${name} ` + textAfter);
+    setMentionOpen(false);
+    inputRef.current?.focus();
+  };
+
+  const filteredMentionMembers = orgMembers.filter(m => {
+    if (m.id === user?.id) return false;
+    const search = mentionSearch.toLowerCase();
+    return m.full_name?.toLowerCase().includes(search) ||
+           m.username?.toLowerCase().includes(search) ||
+           m.email.toLowerCase().includes(search);
+  });
+
+  const renderContentWithMentions = (content: string) => {
+    const mentionRegex = /@(\w+(?:\s\w+)?)/g;
+    const parts = content.split(mentionRegex);
+    return parts.map((part, i) => {
+      if (i % 2 === 1) return <span key={i} className="text-primary font-semibold">@{part}</span>;
+      return part;
+    });
   };
 
   const formatTime = (date: string) => {
@@ -738,7 +839,7 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
                                     ? 'bg-primary text-primary-foreground' 
                                     : 'bg-muted'
                                 )}>
-                                  <p className="text-sm leading-relaxed break-words">{msg.content}</p>
+                                  <p className="text-sm leading-relaxed break-words">{renderContentWithMentions(msg.content)}</p>
                                 </div>
 
                                 {/* Thread Replies */}
@@ -771,10 +872,40 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
             <div className="p-4 border-t border-border bg-background">
               <form onSubmit={handleSendMessage} className="flex gap-2">
                 <div className="flex-1 relative">
+                  {mentionOpen && filteredMentionMembers.length > 0 && (
+                    <div className="absolute bottom-full left-0 mb-1 w-64 bg-popover border border-border rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
+                      <div className="p-1">
+                        {filteredMentionMembers.slice(0, 6).map((member) => (
+                          <button
+                            key={member.id}
+                            type="button"
+                            onClick={() => handleMentionSelect(member)}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-muted text-left"
+                          >
+                            <UserAvatar
+                              src={member.avatar_url}
+                              name={member.full_name}
+                              email={member.email}
+                              size="xs"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate text-sm">
+                                {member.full_name || member.username || member.email.split('@')[0]}
+                              </div>
+                              {member.full_name && (
+                                <div className="text-xs text-muted-foreground truncate">{member.email}</div>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <Input
-                    placeholder={`Message ${activeChannel.type === 'team' ? '#' : ''}${channelName}`}
+                    ref={inputRef}
+                    placeholder={`Message ${activeChannel.type === 'team' ? '#' : ''}${channelName} — type @ to mention`}
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={handleMessageInputChange}
                     className="pr-12"
                   />
                 </div>

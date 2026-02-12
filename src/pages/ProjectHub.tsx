@@ -109,9 +109,10 @@ export default function ProjectHub() {
 
   useEffect(() => {
     if (user) {
-      if (orgId) fetchOrganization();
-      fetchProjects();
-      fetchTeams();
+      setLoading(true);
+      const fetches: Promise<void>[] = [fetchProjects(), fetchTeams()];
+      if (orgId) fetches.push(fetchOrganization());
+      Promise.all(fetches).finally(() => setLoading(false));
     }
   }, [user, orgId]);
 
@@ -142,8 +143,6 @@ export default function ProjectHub() {
       setProjects(projectsData);
     } catch (error: any) {
       toast({ title: 'Error', description: 'Failed to load projects.', variant: 'destructive' });
-    } finally {
-      setLoading(false);
     }
   };
 

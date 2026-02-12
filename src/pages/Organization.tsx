@@ -67,9 +67,8 @@ export default function OrganizationPage() {
 
   useEffect(() => {
     if (user && orgId) {
-      fetchOrganization();
-      fetchTeams();
-      fetchProjects();
+      setLoading(true);
+      Promise.all([fetchOrganization(), fetchTeams(), fetchProjects()]).finally(() => setLoading(false));
     }
   }, [user, orgId]);
 
@@ -90,8 +89,6 @@ export default function OrganizationPage() {
         variant: 'destructive',
       });
       navigate('/dashboard');
-    } finally {
-      setLoading(false);
     }
   };
 
