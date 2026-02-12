@@ -10,9 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Building2, FolderOpen, ArrowRight, Loader2, Calendar, Users, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { Plus, Building2, FolderOpen, ArrowRight, Loader2, Calendar, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getStatusLabel, getStatusVariant } from '@/components/ProjectStatusSelect';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Organization {
   id: string;
@@ -140,9 +141,39 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <DashboardLayout title="Dashboard">
-        <div className="flex items-center justify-center h-96">
-          <Loader2 className="h-8 w-8 animate-spin" />
+      <DashboardLayout breadcrumbs={[{ label: 'Overview' }]}>
+        <div className="p-6 lg:p-8">
+          <div className="mb-8 space-y-2">
+            <Skeleton className="h-9 w-40" />
+            <Skeleton className="h-5 w-64" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-6 flex items-center gap-4">
+                  <Skeleton className="h-12 w-12" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-8 w-12" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="mb-8 space-y-4">
+            <Skeleton className="h-6 w-32" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(3)].map((_, i) => (
+                <Card key={i}>
+                  <CardHeader className="space-y-3">
+                    <Skeleton className="h-10 w-10" />
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-full" />
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       </DashboardLayout>
     );
