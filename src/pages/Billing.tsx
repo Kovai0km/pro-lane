@@ -43,7 +43,7 @@ export default function BillingPage() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-  const [processing, setProcessing] = useState(false);
+  const [processingPlan, setProcessingPlan] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchData();
@@ -84,7 +84,7 @@ export default function BillingPage() {
       return;
     }
 
-    setProcessing(true);
+    setProcessingPlan(planName);
     try {
       const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
         body: { planId: dbPlan.id, billingCycle },
@@ -122,7 +122,7 @@ export default function BillingPage() {
     } catch (error: any) {
       toast({ title: 'Error', description: error.message || 'Failed to initiate payment', variant: 'destructive' });
     } finally {
-      setProcessing(false);
+      setProcessingPlan(null);
     }
   };
 
@@ -265,10 +265,10 @@ export default function BillingPage() {
                   <Button
                     className="w-full mt-6 rounded-xl"
                     variant={plan.highlighted ? 'default' : 'outline'}
-                    disabled={isCurrentPlan || processing}
+                    disabled={isCurrentPlan || processingPlan !== null}
                     onClick={() => handleUpgrade(plan.name)}
                   >
-                    {processing ? (
+                    {processingPlan === plan.name ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : isCurrentPlan ? (
                       'Current Plan'

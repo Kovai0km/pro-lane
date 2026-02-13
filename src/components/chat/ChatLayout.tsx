@@ -24,6 +24,7 @@ import {
   Search,
   ArrowLeft,
   ChevronRight,
+  Filter,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -96,6 +97,8 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllChannels, setShowAllChannels] = useState(false);
   const [showAllDMs, setShowAllDMs] = useState(false);
+  const [messageSearchQuery, setMessageSearchQuery] = useState('');
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
   // @mention state
   const [mentionOpen, setMentionOpen] = useState(false);
@@ -169,6 +172,10 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
                   .eq('id', newMsg.sender_id)
                   .single();
                 setMessages((prev) => [...prev, { ...newMsg, sender_profile: profile || undefined }]);
+                // Auto mark as read if from other user
+                if (newMsg.sender_id !== user.id) {
+                  await supabase.from('messages').update({ read: true }).eq('id', newMsg.id);
+                }
               }
             } else if (activeChannel.type === 'team') {
               if (newMsg.team_id === activeChannel.id) {
@@ -180,6 +187,16 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
                 setMessages((prev) => [...prev, { ...newMsg, sender_profile: profile || undefined }]);
               }
             }
+            // Refresh DM list for unread counts
+            fetchDirectMessages();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'messages' },
+          () => {
+            // Refresh unread counts when messages are marked as read
+            fetchDirectMessages();
           }
         )
         .subscribe();
@@ -468,11 +485,11 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
            m.email.toLowerCase().includes(search);
   });
 
-  const renderContentWithMentions = (content: string) => {
+  const renderContentWithMentions = (content: string, isOwn: boolean) => {
     const mentionRegex = /@(\w+(?:\s\w+)?)/g;
     const parts = content.split(mentionRegex);
     return parts.map((part, i) => {
-      if (i % 2 === 1) return <span key={i} className="text-primary font-semibold">@{part}</span>;
+      if (i % 2 === 1) return <span key={i} className={cn("font-semibold underline", isOwn ? "text-accent-foreground" : "text-primary")}>@{part}</span>;
       return part;
     });
   };
@@ -511,11 +528,18 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
   );
   
   const filteredDMs = directMessages.filter(
-    (dm) =>
-      dm.user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dm.user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dm.user.username?.toLowerCase().includes(searchQuery.toLowerCase())
+    (dm) => {
+      const matchesSearch = dm.user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        dm.user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        dm.user.username?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesUnread = showUnreadOnly ? dm.unreadCount > 0 : true;
+      return matchesSearch && matchesUnread;
+    }
   );
+
+  const filteredMessages = messageSearchQuery
+    ? messages.filter(m => m.content.toLowerCase().includes(messageSearchQuery.toLowerCase()))
+    : messages;
 
   const isMobile = useIsMobile();
   const [showSidebar, setShowSidebar] = useState(!isMobile);
@@ -546,8 +570,8 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
         "border-r border-border flex flex-col bg-background/50",
         isMobile ? (showSidebar ? "absolute inset-0 z-10 w-full" : "hidden") : "w-64"
       )}>
-        {/* Search */}
-        <div className="p-3 border-b">
+        {/* Search & Filter */}
+        <div className="p-3 border-b space-y-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -557,6 +581,15 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
               className="pl-8 h-9"
             />
           </div>
+          <Button
+            variant={showUnreadOnly ? 'default' : 'outline'}
+            size="sm"
+            className="w-full h-7 text-xs"
+            onClick={() => setShowUnreadOnly(!showUnreadOnly)}
+          >
+            <Filter className="h-3 w-3 mr-1" />
+            {showUnreadOnly ? 'Show All' : 'Unread Only'}
+          </Button>
         </div>
 
         <ScrollArea className="flex-1">
@@ -716,7 +749,7 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
         {activeChannel ? (
           <>
             {/* Channel Header */}
-            <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-background">
+            <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-background flex-shrink-0">
               <div className="flex items-center gap-3">
                 {isMobile && (
                   <Button
@@ -760,10 +793,29 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View profile</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      if (activeChannel?.type === 'dm') {
+                        const dmUser = directMessages.find(dm => dm.user.id === activeChannel.id)?.user;
+                        const profilePath = dmUser?.username ? `/user/${dmUser.username}` : `/user/${dmUser?.email?.split('@')[0] || activeChannel.id}`;
+                        navigate(profilePath);
+                      }
+                    }}>View profile</DropdownMenuItem>
                     <DropdownMenuItem>Mute conversation</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+              </div>
+            </div>
+
+            {/* Message Search */}
+            <div className="px-4 py-2 border-b border-border bg-background">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search messages..."
+                  value={messageSearchQuery}
+                  onChange={(e) => setMessageSearchQuery(e.target.value)}
+                  className="pl-8 h-8 text-xs"
+                />
               </div>
             </div>
 
@@ -792,11 +844,11 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
                       </p>
                     </div>
                   ) : (
-                    messages
+                    filteredMessages
                       .filter((msg) => !msg.parent_id)
                       .map((msg) => {
                         const isOwn = msg.sender_id === user?.id;
-                        const replies = messages.filter((m) => m.parent_id === msg.id);
+                        const replies = filteredMessages.filter((m) => m.parent_id === msg.id);
 
                         return (
                           <div
@@ -836,10 +888,10 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
                                 <div className={cn(
                                   'rounded-lg px-4 py-2',
                                   isOwn 
-                                    ? 'bg-primary text-primary-foreground' 
+                                    ? 'bg-secondary text-secondary-foreground' 
                                     : 'bg-muted'
                                 )}>
-                                  <p className="text-sm leading-relaxed break-words">{renderContentWithMentions(msg.content)}</p>
+                                  <p className="text-sm leading-relaxed break-words">{renderContentWithMentions(msg.content, isOwn)}</p>
                                 </div>
 
                                 {/* Thread Replies */}
