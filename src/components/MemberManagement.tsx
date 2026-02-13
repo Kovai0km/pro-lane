@@ -206,27 +206,24 @@ export function MemberManagement({ organizationId, isOwner }: MemberManagementPr
         return 'already_member';
       }
 
-      // Add as member
-      const { data, error } = await supabase
-        .from('organization_members')
-        .insert({ organization_id: organizationId, user_id: profile.id, role: 'member' })
-        .select()
+      // Get org name for notification
+      const { data: orgData } = await supabase
+        .from('organizations')
+        .select('name')
+        .eq('id', organizationId)
         .single();
 
-      if (error) throw error;
-
-      setMembers(prev => [...prev, { ...data, profile }]);
-
-      // Create notification for the user to accept/decline
+      // Send invitation notification - do NOT add as member yet
+      // User will be added only when they accept via the notification
       await supabase.from('notifications').insert({
         user_id: profile.id,
         type: 'org_invitation',
         title: 'Organization Invitation',
-        message: `You've been invited to join an organization. Accept or decline this invitation.`,
-        link: `/org/${organizationId}`,
+        message: `You've been invited to join "${orgData?.name || 'an organization'}". Accept or decline this invitation.`,
+        link: `/accept-org-invite/${organizationId}`,
       });
 
-      if (!silent) toast({ title: 'Member added', description: `${profile.full_name || profile.email} has been added.` });
+      if (!silent) toast({ title: 'Invitation sent', description: `Invitation sent to ${profile.full_name || profile.email}. They need to accept it.` });
       return 'invited';
     } else {
       // Send invitation email for non-existing users

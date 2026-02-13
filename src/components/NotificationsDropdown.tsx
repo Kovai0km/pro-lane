@@ -102,9 +102,16 @@ export function NotificationsDropdown() {
     
     setProcessing(notification.id);
     try {
-      // Extract org ID from link (e.g., /org/uuid)
-      const orgId = notification.link.replace('/org/', '');
+      // Extract org ID from link (e.g., /accept-org-invite/uuid or /org/uuid)
+      const orgId = notification.link.replace('/accept-org-invite/', '').replace('/org/', '');
       
+      // Add user as member of the organization
+      const { error: memberError } = await supabase
+        .from('organization_members')
+        .insert({ organization_id: orgId, user_id: user.id, role: 'member' });
+
+      if (memberError) throw memberError;
+
       // Mark notification as read and update message
       await supabase
         .from('notifications')
@@ -123,7 +130,7 @@ export function NotificationsDropdown() {
       setUnreadCount((prev) => Math.max(0, prev - 1));
       
       toast({ title: 'Invitation accepted', description: 'You now have access to the organization.' });
-      navigate(notification.link);
+      navigate(`/org/${orgId}`);
     } catch (error: any) {
       toast({ title: 'Error', description: error.message || 'Failed to accept invitation.', variant: 'destructive' });
     } finally {
@@ -137,16 +144,7 @@ export function NotificationsDropdown() {
     
     setProcessing(notification.id);
     try {
-      const orgId = notification.link.replace('/org/', '');
-      
-      // Remove from organization_members
-      await supabase
-        .from('organization_members')
-        .delete()
-        .eq('organization_id', orgId)
-        .eq('user_id', user.id);
-
-      // Update notification
+      // Update notification as declined (no member to remove since we don't add on invite anymore)
       await supabase
         .from('notifications')
         .update({ 
@@ -183,7 +181,7 @@ export function NotificationsDropdown() {
   };
 
   const isInvitation = (n: Notification) => 
-    n.type === 'org_invitation' && !n.message?.includes('[Accepted]') && !n.message?.includes('[Declined]');
+    n.type === 'org_invitation' && !n.message?.includes('[Accepted]') && !n.message?.includes('[Declined]') && !n.read;
 
   return (
     <DropdownMenu>
