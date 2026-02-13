@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { FolderOpen, Search, Filter, Calendar, ArrowRight, Loader2, Plus, ArrowUp, ArrowDown, Minus, HardDrive, LayoutGrid, List } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { getStatusLabel, getStatusVariant } from '@/components/ProjectStatusSelect';
 import { formatStorageSize } from '@/hooks/useStorageUsage';
 
@@ -124,6 +125,7 @@ export default function ProjectHub() {
 
   const fetchProjects = async () => {
     try {
+      // Fetch projects created by user OR assigned to user OR where user is a member
       let query = supabase.from('projects').select('*, organizations(name)').order('created_at', { ascending: false });
       if (orgId) query = query.eq('organization_id', orgId);
       const { data, error } = await query;
@@ -225,7 +227,26 @@ export default function ProjectHub() {
   if (loading) {
     return (
       <DashboardLayout title="Project Hub">
-        <div className="flex items-center justify-center h-96"><Loader2 className="h-8 w-8 animate-spin" /></div>
+        <div className="p-6 lg:p-8 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <Skeleton className="h-8 w-64 mb-2" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <Card><CardContent className="p-4"><Skeleton className="h-10 w-full" /></CardContent></Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1,2,3,4,5,6].map(i => (
+              <Card key={i}><CardContent className="p-6 space-y-3">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent></Card>
+            ))}
+          </div>
+        </div>
       </DashboardLayout>
     );
   }

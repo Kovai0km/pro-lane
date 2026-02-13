@@ -520,28 +520,35 @@ export default function ProjectPage() {
                     )}
                     {/* Priority Badge */}
                     <PriorityBadge priority={project.priority} />
-                    {/* Status Dropdown */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" disabled={statusUpdating} className="gap-2">
-                          <span className={`h-2 w-2 rounded-full ${getStatusColor(project.status)}`} />
-                          {getStatusLabel(project.status)}
-                          <ChevronDown className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className="bg-background border-2 border-foreground">
-                        {PROJECT_STATUSES.map((status) => (
-                          <DropdownMenuItem
-                            key={status.value}
-                            onClick={() => handleStatusChange(status.value)}
-                            className="gap-2 cursor-pointer"
-                          >
-                            <span className={`h-2 w-2 rounded-full ${getStatusColor(status.value)}`} />
-                            {status.label}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Status Dropdown - only creator can change */}
+                    {isOwner ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" disabled={statusUpdating} className="gap-2">
+                            <span className={`h-2 w-2 rounded-full ${getStatusColor(project.status)}`} />
+                            {getStatusLabel(project.status)}
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="bg-background border-2 border-foreground">
+                          {PROJECT_STATUSES.map((status) => (
+                            <DropdownMenuItem
+                              key={status.value}
+                              onClick={() => handleStatusChange(status.value)}
+                              className="gap-2 cursor-pointer"
+                            >
+                              <span className={`h-2 w-2 rounded-full ${getStatusColor(status.value)}`} />
+                              {status.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <Badge variant="outline" className="gap-2">
+                        <span className={`h-2 w-2 rounded-full ${getStatusColor(project.status)}`} />
+                        {getStatusLabel(project.status)}
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-muted-foreground whitespace-pre-wrap break-words">
                     {project.description || 'No description'}
@@ -565,16 +572,20 @@ export default function ProjectPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <ProjectAssignment 
-                    projectId={project.id} 
-                    currentAssignee={project.assigned_to}
-                    onAssigned={() => fetchProject()}
-                    allowSelfAssign={isOwner}
-                  />
-                  <Button variant="outline" size="default" className="h-10 px-4" onClick={() => setEditing(true)}>
-                    <Edit2 className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
+                  {isOwner && (
+                    <ProjectAssignment 
+                      projectId={project.id} 
+                      currentAssignee={project.assigned_to}
+                      onAssigned={() => fetchProject()}
+                      allowSelfAssign={isOwner}
+                    />
+                  )}
+                  {isOwner && (
+                    <Button variant="outline" size="default" className="h-10 px-4" onClick={() => setEditing(true)}>
+                      <Edit2 className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
