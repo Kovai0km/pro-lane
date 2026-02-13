@@ -69,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         amount: amountInPaise,
         currency: "INR",
-        receipt: `order_${user.id}_${Date.now()}`,
+        receipt: `rcpt_${Date.now()}`,
         notes: {
           user_id: user.id,
           plan_id: planId,
