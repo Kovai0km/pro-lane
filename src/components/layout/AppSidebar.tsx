@@ -284,6 +284,11 @@ export function AppSidebar() {
                         <Link to={`/org/${currentOrg.id}?tab=settings`}><Settings className="h-4 w-4" /><span>Org's Settings</span></Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === `/org/${currentOrg.id}/members`} tooltip="Members">
+                        <Link to={`/org/${currentOrg.id}/members`}><Users className="h-4 w-4" /><span>Members</span></Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>

@@ -41,31 +41,34 @@ function useResolvedAvatarUrl(src: string | null | undefined) {
       return;
     }
 
+    // If it's a relative storage path (e.g. "avatars/xxx.jpg"), create a signed URL
+    if (!src.startsWith('http') && !src.startsWith('data:') && !src.startsWith('blob:')) {
+      supabase.storage
+        .from('project-files')
+        .createSignedUrl(src, 3600)
+        .then(({ data }) => {
+          setResolvedUrl(data?.signedUrl || null);
+        });
+      return;
+    }
+
     // Check if this is a Supabase storage URL that needs signing
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     if (supabaseUrl && src.includes(supabaseUrl) && src.includes('/storage/v1/object/public/')) {
-      // Extract the path from the public URL
       const pathMatch = src.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)/);
       if (pathMatch) {
         const bucket = pathMatch[1];
         const filePath = decodeURIComponent(pathMatch[2]);
-        
         supabase.storage
           .from(bucket)
           .createSignedUrl(filePath, 3600)
-          .then(({ data, error }) => {
-            if (data?.signedUrl) {
-              setResolvedUrl(data.signedUrl);
-            } else {
-              // Fallback to original URL
-              setResolvedUrl(src);
-            }
+          .then(({ data }) => {
+            setResolvedUrl(data?.signedUrl || src);
           });
         return;
       }
     }
 
-    // Not a Supabase URL or doesn't need signing
     setResolvedUrl(src);
   }, [src]);
 

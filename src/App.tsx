@@ -39,6 +39,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Chat = lazy(() => import("./pages/Chat"));
 const ChannelList = lazy(() => import("./pages/ChannelList"));
 const DirectMessageList = lazy(() => import("./pages/DirectMessageList"));
+const Members = lazy(() => import("./pages/Members"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,6 +88,7 @@ const App = () => (
                 <Route path="/dashboard" element={<Suspense fallback={<LoadingFallback type="dashboard" />}><ProtectedRoute><Dashboard /></ProtectedRoute></Suspense>} />
                 <Route path="/org/:orgId" element={<Suspense fallback={<LoadingFallback type="dashboard" />}><ProtectedRoute><Organization /></ProtectedRoute></Suspense>} />
                 <Route path="/org/:orgId/projects" element={<Suspense fallback={<LoadingFallback />}><ProtectedRoute><ProjectHub /></ProtectedRoute></Suspense>} />
+                <Route path="/org/:orgId/members" element={<Suspense fallback={<LoadingFallback />}><ProtectedRoute><Members /></ProtectedRoute></Suspense>} />
                 <Route path="/org/:orgId/chat" element={<Suspense fallback={<LoadingFallback type="chat" />}><ProtectedRoute><Chat /></ProtectedRoute></Suspense>} />
                 <Route path="/org/:orgId/chat/channels" element={<Suspense fallback={<LoadingFallback type="chat" />}><ProtectedRoute><ChannelList /></ProtectedRoute></Suspense>} />
                 <Route path="/org/:orgId/chat/dms" element={<Suspense fallback={<LoadingFallback type="chat" />}><ProtectedRoute><DirectMessageList /></ProtectedRoute></Suspense>} />

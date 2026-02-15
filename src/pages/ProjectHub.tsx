@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { FolderOpen, Search, Filter, Calendar, ArrowRight, Loader2, Plus, ArrowUp, ArrowDown, Minus, HardDrive, LayoutGrid, List } from 'lucide-react';
+import { FolderOpen, Search, Filter, Calendar, ArrowRight, Loader2, Plus, ArrowUp, ArrowDown, Minus, HardDrive, LayoutGrid, List, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getStatusLabel, getStatusVariant } from '@/components/ProjectStatusSelect';
 import { formatStorageSize } from '@/hooks/useStorageUsage';
@@ -46,6 +46,8 @@ interface Team {
 
 type JobType = 'video_editing' | 'design' | 'website' | 'other';
 type Priority = 'high' | 'medium' | 'low';
+
+const PAGE_SIZE = 12;
 
 const JOB_TYPES = [
   { value: 'all', label: 'All Types' },
@@ -90,8 +92,10 @@ export default function ProjectHub() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'created_at' | 'due_date' | 'title' | 'priority'>('created_at');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => (localStorage.getItem('projectHubView') as 'grid' | 'list') || 'grid');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
-  // Project dialog state - direct to details (no template step)
+  // Project dialog state
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
   const [newProject, setNewProject] = useState({
@@ -115,7 +119,12 @@ export default function ProjectHub() {
       if (orgId) fetches.push(fetchOrganization());
       Promise.all(fetches).finally(() => setLoading(false));
     }
-  }, [user, orgId]);
+  }, [user, orgId, currentPage, statusFilter, jobTypeFilter, priorityFilter, sortBy, searchQuery]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, jobTypeFilter, priorityFilter, searchQuery]);
 
   const fetchOrganization = async () => {
     if (!orgId) return;
@@ -125,12 +134,31 @@ export default function ProjectHub() {
 
   const fetchProjects = async () => {
     try {
-      // Fetch projects created by user OR assigned to user OR where user is a member
-      let query = supabase.from('projects').select('*, organizations(name)').order('created_at', { ascending: false });
+      let query = supabase.from('projects').select('*, organizations(name)', { count: 'exact' });
       if (orgId) query = query.eq('organization_id', orgId);
-      const { data, error } = await query;
+      
+      // Apply filters
+      if (statusFilter !== 'all') query = query.eq('status', statusFilter as any);
+      if (jobTypeFilter !== 'all') query = query.eq('job_type', jobTypeFilter as any);
+      if (priorityFilter !== 'all') query = query.eq('priority', priorityFilter as any);
+      if (searchQuery.trim()) {
+        query = query.or(`title.ilike.%${searchQuery}%,project_code.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+      }
+
+      // Sort
+      const ascending = sortBy === 'title' || sortBy === 'due_date';
+      query = query.order(sortBy === 'priority' ? 'priority' : sortBy, { ascending });
+
+      // Paginate
+      const from = (currentPage - 1) * PAGE_SIZE;
+      query = query.range(from, from + PAGE_SIZE - 1);
+
+      const { data, error, count } = await query;
       if (error) throw error;
+      
+      setTotalCount(count || 0);
       const projectsData = (data || []) as Project[];
+      
       if (projectsData.length > 0) {
         const projectIds = projectsData.map(p => p.id);
         const [{ data: outputs }, { data: attachments }] = await Promise.all([
@@ -181,7 +209,6 @@ export default function ProjectHub() {
         .single();
       if (error) throw error;
       await supabase.from('project_members').insert({ project_id: data.id, user_id: user.id, role: 'owner' });
-      setProjects([data as Project, ...projects]);
       setProjectDialogOpen(false);
       resetProjectDialog();
       toast({ title: 'Project created', description: `${data.title} has been created.` });
@@ -202,26 +229,12 @@ export default function ProjectHub() {
     }
   };
 
-  const filteredProjects = projects
-    .filter((p) => {
-      const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || p.description?.toLowerCase().includes(searchQuery.toLowerCase()) || p.project_code?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
-      const matchesJobType = jobTypeFilter === 'all' || p.job_type === jobTypeFilter;
-      const matchesPriority = priorityFilter === 'all' || p.priority === priorityFilter;
-      return matchesSearch && matchesStatus && matchesJobType && matchesPriority;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'title') return a.title.localeCompare(b.title);
-      if (sortBy === 'due_date') { if (!a.due_date) return 1; if (!b.due_date) return -1; return new Date(a.due_date).getTime() - new Date(b.due_date).getTime(); }
-      if (sortBy === 'priority') { const po = { high: 0, medium: 1, low: 2 }; return po[a.priority] - po[b.priority]; }
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-
   const getJobTypeLabel = (type: string) => {
     const labels: Record<string, string> = { video_editing: 'Video Editing', design: 'Design', website: 'Website', other: 'Other' };
     return labels[type] || type;
   };
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
   const canCreateProject = !!orgId;
 
   if (loading) {
@@ -261,10 +274,12 @@ export default function ProjectHub() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">{organization ? `${organization.name} Projects` : 'All Projects'}</h1>
-            <p className="text-muted-foreground">{organization ? 'View and manage projects for this organization.' : 'View all your projects across organizations.'}</p>
+            <p className="text-muted-foreground">
+              {organization ? 'View and manage projects for this organization.' : 'View all your projects across organizations.'}
+              {totalCount > 0 && <span className="ml-2 text-sm">({totalCount} total)</span>}
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* View Toggle */}
             <div className="flex items-center border rounded-lg overflow-hidden">
               <Button variant={viewMode === 'grid' ? 'default' : 'ghost'} size="icon" className="rounded-none h-9 w-9" onClick={() => setViewMode('grid')}>
                 <LayoutGrid className="h-4 w-4" />
@@ -391,7 +406,7 @@ export default function ProjectHub() {
         </Card>
 
         {/* Projects */}
-        {filteredProjects.length === 0 ? (
+        {projects.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="p-12 text-center">
               <FolderOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -406,7 +421,7 @@ export default function ProjectHub() {
           </Card>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredProjects.map((project) => (
+            {projects.map((project) => (
               <Link key={project.id} to={`/project/${project.id}`}>
                 <Card className="h-full hover:bg-secondary/50 transition-colors cursor-pointer group">
                   <CardHeader className="pb-2">
@@ -438,7 +453,6 @@ export default function ProjectHub() {
             ))}
           </div>
         ) : (
-          /* List View */
           <Card>
             <Table>
               <TableHeader>
@@ -453,7 +467,7 @@ export default function ProjectHub() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProjects.map((project) => (
+                {projects.map((project) => (
                   <TableRow key={project.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/project/${project.id}`)}>
                     <TableCell>
                       <div>
@@ -481,6 +495,58 @@ export default function ProjectHub() {
               </TableBody>
             </Table>
           </Card>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6">
+            <p className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages} ({totalCount} projects)
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </Button>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let page: number;
+                if (totalPages <= 5) {
+                  page = i + 1;
+                } else if (currentPage <= 3) {
+                  page = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  page = totalPages - 4 + i;
+                } else {
+                  page = currentPage - 2 + i;
+                }
+                return (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? 'default' : 'outline'}
+                    size="sm"
+                    className="w-9"
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </Button>
+                );
+              })}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </DashboardLayout>

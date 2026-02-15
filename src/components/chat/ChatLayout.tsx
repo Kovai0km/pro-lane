@@ -25,6 +25,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Filter,
+  Trash2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -439,7 +440,6 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
       }
       setNewMessage('');
       setMentionOpen(false);
-      // Create mention notifications in background
       createMentionNotifications(content);
     } catch (error: any) {
       toast({
@@ -449,6 +449,17 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
       });
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase.from('messages').delete().eq('id', messageId);
+      if (error) throw error;
+      setMessages(prev => prev.filter(m => m.id !== messageId && m.parent_id !== messageId));
+      toast({ title: 'Message deleted' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -886,12 +897,21 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
                                   </span>
                                 </div>
                                 <div className={cn(
-                                  'rounded-lg px-4 py-2',
+                                  'rounded-lg px-4 py-2 group/msg relative',
                                   isOwn 
                                     ? 'bg-secondary text-secondary-foreground' 
                                     : 'bg-muted'
                                 )}>
                                   <p className="text-sm leading-relaxed break-words">{renderContentWithMentions(msg.content, isOwn)}</p>
+                                  {isOwn && (
+                                    <button
+                                      onClick={() => handleDeleteMessage(msg.id)}
+                                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover/msg:opacity-100 transition-opacity"
+                                      title="Delete message"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  )}
                                 </div>
 
                                 {/* Thread Replies */}
