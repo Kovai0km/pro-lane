@@ -19,17 +19,20 @@ const authSchema = z.object({
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>(
-    searchParams.get('mode') === 'signup' ? 'signup' : 'signin'
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'reset'>(
+    searchParams.get('mode') === 'signup' ? 'signup' 
+    : searchParams.get('mode') === 'reset' ? 'reset'
+    : 'signin'
   );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string }>({});
 
-  const { signIn, signUp, resetPassword, user } = useAuth();
+  const { signIn, signUp, resetPassword, updatePassword, user } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -69,6 +72,25 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (mode === 'reset') {
+      if (newPassword.length < 6) {
+        toast({ title: 'Password too short', description: 'Password must be at least 6 characters.', variant: 'destructive' });
+        return;
+      }
+      setLoading(true);
+      try {
+        const { error } = await updatePassword(newPassword);
+        if (error) throw error;
+        toast({ title: 'Password updated', description: 'Your password has been changed. Redirecting...' });
+        navigate('/dashboard');
+      } catch (error: any) {
+        toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!validateForm()) return;
     
     setLoading(true);
@@ -77,41 +99,22 @@ export default function Auth() {
       if (mode === 'forgot') {
         const { error } = await resetPassword(email);
         if (error) {
-          toast({
-            title: 'Error',
-            description: error.message,
-            variant: 'destructive',
-          });
+          toast({ title: 'Error', description: error.message, variant: 'destructive' });
         } else {
           setResetSent(true);
-          toast({
-            title: 'Check your email',
-            description: 'We sent you a password reset link.',
-          });
+          toast({ title: 'Check your email', description: 'We sent you a password reset link.' });
         }
       } else if (mode === 'signup') {
         const { error } = await signUp(email, password, fullName);
         if (error) {
           if (error.message.includes('already registered')) {
-            toast({
-              title: 'Account exists',
-              description: 'An account with this email already exists. Please sign in instead.',
-              variant: 'destructive',
-            });
+            toast({ title: 'Account exists', description: 'An account with this email already exists. Please sign in instead.', variant: 'destructive' });
             setMode('signin');
           } else {
-            toast({
-              title: 'Sign up failed',
-              description: error.message,
-              variant: 'destructive',
-            });
+            toast({ title: 'Sign up failed', description: error.message, variant: 'destructive' });
           }
         } else {
-          toast({
-            title: 'Account created',
-            description: 'Welcome to ProOrbit! Redirecting to dashboard...',
-          });
-          navigate('/dashboard');
+          toast({ title: 'Account created', description: 'Please check your email to verify your account.' });
         }
       } else {
         const { error } = await signIn(email, password);
@@ -120,6 +123,8 @@ export default function Auth() {
             title: 'Sign in failed',
             description: error.message.includes('Invalid') 
               ? 'Invalid email or password. Please try again.'
+              : error.message.includes('Email not confirmed')
+              ? 'Please verify your email first. Check your inbox for a verification link.'
               : error.message,
             variant: 'destructive',
           });
@@ -128,11 +133,7 @@ export default function Auth() {
         }
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'An unexpected error occurred. Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -154,13 +155,15 @@ export default function Auth() {
               <span className="text-xl font-bold">PROORBIT</span>
             </div>
             <h1 className="text-3xl font-bold mb-2">
-              {mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Create your account' : 'Reset password'}
+              {mode === 'signin' ? 'Welcome back' : mode === 'signup' ? 'Create your account' : mode === 'reset' ? 'Set new password' : 'Reset password'}
             </h1>
             <p className="text-muted-foreground">
               {mode === 'signin' 
                 ? 'Sign in to manage your agency workflow.' 
                 : mode === 'signup'
                 ? 'Start organizing your creative projects today.'
+                : mode === 'reset'
+                ? 'Enter your new password below.'
                 : "Enter your email and we'll send you a reset link."}
             </p>
           </div>
@@ -181,6 +184,21 @@ export default function Auth() {
           ) : (
             <>
               <form onSubmit={handleSubmit} className="space-y-6">
+                {mode === 'reset' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      disabled={loading}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                )}
                 {mode === 'signup' && (
                   <div className="space-y-2">
                     <Label htmlFor="fullName">Full Name</Label>
@@ -198,23 +216,15 @@ export default function Auth() {
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@agency.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={loading}
-                    required
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-destructive">{errors.email}</p>
-                  )}
-                </div>
+                {mode !== 'reset' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input id="email" type="email" placeholder="you@agency.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} required />
+                    {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                  </div>
+                )}
 
-                {mode !== 'forgot' && (
+                {mode !== 'forgot' && mode !== 'reset' && (
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <Input
@@ -246,7 +256,7 @@ export default function Auth() {
 
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : 'Send Reset Link'}
+                  {mode === 'signin' ? 'Sign In' : mode === 'signup' ? 'Create Account' : mode === 'reset' ? 'Update Password' : 'Send Reset Link'}
                 </Button>
               </form>
 
