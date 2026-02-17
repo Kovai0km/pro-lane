@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Users, FolderOpen, Loader2, UserPlus, ArrowRight } from 'lucide-react';
-import { MemberManagement } from '@/components/MemberManagement';
+
 import { OrganizationSettings } from '@/components/OrganizationSettings';
 import ChatPage from './Chat';
 import TeamPage from './Team';
@@ -320,22 +320,12 @@ export default function OrganizationPage() {
             <p className="text-muted-foreground">Manage your organization settings and members.</p>
           </div>
           
-          <div className="space-y-8">
-            <OrganizationSettings
+          <OrganizationSettings
               organization={organization}
               isOwner={organization.owner_id === user?.id}
               onUpdate={(updated) => setOrganization(updated as Organization)}
               onDelete={() => navigate('/dashboard')}
             />
-            
-            <div className="pt-8 border-t">
-              <h2 className="text-xl font-semibold mb-4">Members</h2>
-              <MemberManagement 
-                organizationId={orgId!} 
-                isOwner={organization.owner_id === user?.id} 
-              />
-            </div>
-          </div>
         </div>
       </DashboardLayout>
     );
