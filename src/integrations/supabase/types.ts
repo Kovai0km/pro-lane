@@ -894,6 +894,7 @@ export type Database = {
     }
     Functions: {
       extract_mentions: { Args: { content: string }; Returns: string[] }
+      generate_org_project_code: { Args: { org_id: string }; Returns: string }
       generate_otp_code: { Args: never; Returns: string }
       generate_project_code: { Args: never; Returns: string }
       has_project_access: {

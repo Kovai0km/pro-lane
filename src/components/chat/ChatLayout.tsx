@@ -794,9 +794,6 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Users className="h-4 w-4" />
-                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -807,7 +804,7 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
                     <DropdownMenuItem onClick={() => {
                       if (activeChannel?.type === 'dm') {
                         const dmUser = directMessages.find(dm => dm.user.id === activeChannel.id)?.user;
-                        const profilePath = dmUser?.username ? `/user/${dmUser.username}` : `/user/${dmUser?.email?.split('@')[0] || activeChannel.id}`;
+                        const profilePath = dmUser?.username ? `/u/${dmUser.username}` : `/u/${dmUser?.email?.split('@')[0] || activeChannel.id}`;
                         navigate(profilePath);
                       }
                     }}>View profile</DropdownMenuItem>
