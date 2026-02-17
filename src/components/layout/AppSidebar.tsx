@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Building2, FolderOpen, Users, Settings, User, LogOut, ChevronUp, Plus, LayoutDashboard, Moon, Sun, Hash, MessageSquare, ChevronDown, Crown, Loader2, AlertCircle } from 'lucide-react';
+import { Building2, FolderOpen, Users, Settings, User, LogOut, Plus, LayoutDashboard, Moon, Sun, Hash, MessageSquare, ChevronDown, Crown, Loader2, AlertCircle, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -289,6 +289,11 @@ export function AppSidebar() {
                         <Link to={`/org/${currentOrg.id}/members`}><Users className="h-4 w-4" /><span>Members</span></Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild isActive={location.pathname === `/org/${currentOrg.id}/activity`} tooltip="Activity">
+                        <Link to={`/org/${currentOrg.id}/activity`}><Activity className="h-4 w-4" /><span>Activity</span></Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -315,29 +320,29 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent" tooltip={profile?.username ? `@${profile.username}` : user?.email || 'Account'}>
-                    <UserAvatar src={profile?.avatar_url} name={profile?.full_name} email={user?.email} size="xs" fallbackClassName="bg-sidebar-accent text-sidebar-accent-foreground" />
-                    <div className="flex flex-col items-start text-left flex-1 min-w-0">
-                      <span className="text-sm font-medium truncate max-w-[120px]">{profile?.full_name || user?.email?.split('@')[0]}</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-muted-foreground truncate">{profile?.username ? `@${profile.username}` : user?.email?.split('@')[0]}</span>
-                        {profile?.plan && profile.plan !== 'free' && (
-                          <Badge variant="default" className="h-4 text-[8px] px-1 bg-amber-500 hover:bg-amber-500">
-                            <Crown className="h-2 w-2 mr-0.5" />
-                            {profile.plan.toUpperCase()}
-                          </Badge>
-                        )}
-                      </div>
+              <SidebarMenuButton onClick={handleSignOut} tooltip="Sign Out" className="text-destructive hover:text-destructive">
+                <LogOut className="h-4 w-4" />
+                <span>Sign Out</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip={profile?.username ? `@${profile.username}` : user?.email || 'Account'}>
+                <Link to="/profile" className="flex items-center gap-3">
+                  <UserAvatar src={profile?.avatar_url} name={profile?.full_name} email={user?.email} size="xs" fallbackClassName="bg-sidebar-accent text-sidebar-accent-foreground" />
+                  <div className="flex flex-col items-start text-left flex-1 min-w-0">
+                    <span className="text-sm font-medium truncate max-w-[120px]">{profile?.full_name || user?.email?.split('@')[0]}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground truncate">{profile?.username ? `@${profile.username}` : user?.email?.split('@')[0]}</span>
+                      {profile?.plan && profile.plan !== 'free' && (
+                        <Badge variant="default" className="h-4 text-[8px] px-1 bg-amber-500 hover:bg-amber-500">
+                          <Crown className="h-2 w-2 mr-0.5" />
+                          {profile.plan.toUpperCase()}
+                        </Badge>
+                      )}
                     </div>
-                    <ChevronUp className="h-4 w-4" />
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="top" align="start" className="w-56 bg-popover">
-                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive"><LogOut className="mr-2 h-4 w-4" />Sign Out</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </div>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>

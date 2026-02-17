@@ -25,7 +25,7 @@ import { ProjectAssignment } from '@/components/ProjectAssignment';
 import { VideoPlayer, VideoPlayerRef } from '@/components/VideoPlayer';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DiscussionTab } from '@/components/project/DiscussionTab';
-import { ActivityLog } from '@/components/project/ActivityLog';
+
 
 const PROJECT_STATUSES = [
   { value: 'draft', label: 'Draft' },
@@ -592,9 +592,6 @@ export default function ProjectPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* Activity Log */}
-        <ActivityLog projectId={projectId!} />
 
         {/* Tabs */}
         <Tabs defaultValue="discussion" className="space-y-6">
