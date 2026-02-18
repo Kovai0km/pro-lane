@@ -348,8 +348,10 @@ export type Database = {
           notification_email: boolean | null
           notification_mentions: boolean | null
           notification_status_changes: boolean | null
+          phone: string | null
           plan: string
           plan_expires_at: string | null
+          social_links: Json | null
           updated_at: string | null
           username: string | null
         }
@@ -364,8 +366,10 @@ export type Database = {
           notification_email?: boolean | null
           notification_mentions?: boolean | null
           notification_status_changes?: boolean | null
+          phone?: string | null
           plan?: string
           plan_expires_at?: string | null
+          social_links?: Json | null
           updated_at?: string | null
           username?: string | null
         }
@@ -380,8 +384,10 @@ export type Database = {
           notification_email?: boolean | null
           notification_mentions?: boolean | null
           notification_status_changes?: boolean | null
+          phone?: string | null
           plan?: string
           plan_expires_at?: string | null
+          social_links?: Json | null
           updated_at?: string | null
           username?: string | null
         }

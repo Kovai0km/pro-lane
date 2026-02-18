@@ -40,6 +40,11 @@ import {
 } from '@/components/ui/collapsible';
 import { NewMessageDialog } from '@/components/NewMessageDialog';
 import { ThreadReplies } from '@/components/ThreadReplies';
+import { EmojiReactionPicker } from '@/components/EmojiReactionPicker';
+import { Smile } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+const CHAT_EMOJIS = ['😀', '😂', '❤️', '👍', '👎', '🎉', '🔥', '👀', '💯', '🚀', '😢', '🤔', '👏', '✅', '❌'];
 
 interface Profile {
   id: string;
@@ -978,6 +983,20 @@ export function ChatLayout({ orgId }: ChatLayoutProps) {
                     className="pr-12"
                   />
                 </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0">
+                      <Smile className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-2" align="end" side="top">
+                    <div className="flex gap-1 flex-wrap max-w-[220px]">
+                      {CHAT_EMOJIS.map((emoji) => (
+                        <button key={emoji} type="button" onClick={() => { setNewMessage(prev => prev + emoji); inputRef.current?.focus(); }} className="p-1.5 rounded hover:bg-muted transition-colors text-lg">{emoji}</button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <Button type="submit" disabled={sending || !newMessage.trim()}>
                   {sending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

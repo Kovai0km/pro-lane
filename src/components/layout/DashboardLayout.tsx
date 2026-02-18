@@ -1,5 +1,5 @@
 import { ReactNode, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
@@ -61,7 +61,7 @@ export function DashboardLayout({ children, title, breadcrumbs }: DashboardLayou
                   <BreadcrumbItem key={index}>
                     {index < breadcrumbs.length - 1 ? (
                       <>
-                        <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                        <BreadcrumbLink asChild><Link to={crumb.href || '#'}>{crumb.label}</Link></BreadcrumbLink>
                         <BreadcrumbSeparator />
                       </>
                     ) : (

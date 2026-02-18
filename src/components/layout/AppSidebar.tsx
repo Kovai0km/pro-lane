@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Building2, FolderOpen, Users, Settings, User, LogOut, Plus, LayoutDashboard, Moon, Sun, Hash, MessageSquare, ChevronDown, Crown, Loader2, AlertCircle, Activity } from 'lucide-react';
+import { Building2, FolderOpen, Users, Settings, LogOut, Plus, LayoutDashboard, Moon, Sun, Hash, MessageSquare, ChevronDown, Crown, Loader2, AlertCircle, Activity, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -26,6 +26,7 @@ interface Organization { id: string; name: string; }
 interface Team { id: string; name: string; }
 interface DirectMessage { user: { id: string; email: string; full_name: string | null }; unreadCount: number; }
 interface Profile { avatar_url: string | null; plan: string; full_name: string | null; username: string | null; }
+interface RecentProject { id: string; title: string; project_code: string | null; }
 
 export function AppSidebar() {
   const { user, signOut } = useAuth();
@@ -48,6 +49,9 @@ export function AppSidebar() {
   const [newOrgDescription, setNewOrgDescription] = useState('');
   const [creatingOrg, setCreatingOrg] = useState(false);
   const [planLimitReached, setPlanLimitReached] = useState(false);
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
+  const [projectsOpen, setProjectsOpen] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => { if (user) { fetchOrganizations(); fetchProfile(); } }, [user]);
   useEffect(() => {
@@ -55,9 +59,8 @@ export function AppSidebar() {
     else if (organizations.length > 0 && !orgId) setCurrentOrg(organizations[0]);
     else setCurrentOrg(null);
   }, [orgId, organizations]);
-  useEffect(() => { if (currentOrg && user) { fetchTeams(); fetchDirectMessages(); } }, [currentOrg, user]);
+  useEffect(() => { if (currentOrg && user) { fetchTeams(); fetchDirectMessages(); fetchRecentProjects(); checkAdmin(); } }, [currentOrg, user]);
 
-  // Realtime profile subscription
   useEffect(() => {
     if (!user) return;
     const channel = supabase.channel('sidebar-profile').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` }, (payload) => {
@@ -67,7 +70,6 @@ export function AppSidebar() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  // Realtime org name subscription
   useEffect(() => {
     const channel = supabase.channel('sidebar-orgs').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'organizations' }, (payload) => {
       const updated = payload.new as Organization;
@@ -93,6 +95,16 @@ export function AppSidebar() {
       const { data: profiles } = await supabase.from('profiles').select('id, email, full_name').in('id', Array.from(userIds));
       if (profiles) setDirectMessages(profiles.map(p => ({ user: p, unreadCount: receivedMessages?.filter(m => m.sender_id === p.id && !m.read).length || 0 })));
     }
+  };
+  const fetchRecentProjects = async () => {
+    if (!currentOrg) return;
+    const { data } = await supabase.from('projects').select('id, title, project_code').eq('organization_id', currentOrg.id).order('updated_at', { ascending: false }).limit(5);
+    if (data) setRecentProjects(data);
+  };
+  const checkAdmin = async () => {
+    if (!currentOrg || !user) return;
+    const { data } = await supabase.from('organization_members').select('role').eq('organization_id', currentOrg.id).eq('user_id', user.id).single();
+    setIsAdmin(data?.role === 'admin');
   };
 
   const handleOrgChange = (newOrgId: string) => { if (newOrgId === 'new') handleOpenCreateOrg(); else navigate(`/org/${newOrgId}`); };
@@ -213,6 +225,42 @@ export function AppSidebar() {
             </SidebarGroup>
           )}
 
+          {/* Recent Projects */}
+          {currentOrg && !isCollapsed && recentProjects.length > 0 && (
+            <>
+              <SidebarSeparator />
+              <SidebarGroup>
+                <Collapsible open={projectsOpen} onOpenChange={setProjectsOpen}>
+                  <CollapsibleTrigger className="w-full">
+                    <SidebarGroupLabel className="flex items-center justify-between cursor-pointer hover:bg-sidebar-accent/50 rounded px-2 py-1">
+                      <div className="flex items-center gap-2">
+                        <FolderOpen className="h-4 w-4" />
+                        <span>Recent Projects</span>
+                      </div>
+                      {projectsOpen ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </SidebarGroupLabel>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarGroupContent className="mt-1">
+                      <SidebarMenu>
+                        {recentProjects.map(project => (
+                          <SidebarMenuItem key={project.id}>
+                            <SidebarMenuButton asChild isActive={location.pathname === `/project/${project.id}`} className="text-xs">
+                              <Link to={`/project/${project.id}`}>
+                                <span className="text-muted-foreground font-mono text-[10px]">{project.project_code || '—'}</span>
+                                <span className="truncate">{project.title}</span>
+                              </Link>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  </CollapsibleContent>
+                </Collapsible>
+              </SidebarGroup>
+            </>
+          )}
+
           {/* Chat Section */}
           {currentOrg && !isCollapsed && (
             <>
@@ -289,11 +337,13 @@ export function AppSidebar() {
                         <Link to={`/org/${currentOrg.id}/members`}><Users className="h-4 w-4" /><span>Members</span></Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild isActive={location.pathname === `/org/${currentOrg.id}/activity`} tooltip="Activity">
-                        <Link to={`/org/${currentOrg.id}/activity`}><Activity className="h-4 w-4" /><span>Activity</span></Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    {isAdmin && (
+                      <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={location.pathname === `/org/${currentOrg.id}/activity`} tooltip="Activity">
+                          <Link to={`/org/${currentOrg.id}/activity`}><Activity className="h-4 w-4" /><span>Activity</span></Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
@@ -310,39 +360,35 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Profile">
-                <Link to="/profile"><User className="h-4 w-4" /><span>Profile</span></Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
               <SidebarMenuButton asChild tooltip="Settings">
                 <Link to="/settings"><Settings className="h-4 w-4" /><span>Settings</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={handleSignOut} tooltip="Sign Out" className="text-destructive hover:text-destructive">
-                <LogOut className="h-4 w-4" />
-                <span>Sign Out</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={profile?.username ? `@${profile.username}` : user?.email || 'Account'}>
-                <Link to="/profile" className="flex items-center gap-3">
+              <div className="flex items-center gap-2 w-full px-2 py-1.5">
+                <Link to={profile?.username ? `/u/${profile.username}` : '/profile'} className="flex items-center gap-3 flex-1 min-w-0">
                   <UserAvatar src={profile?.avatar_url} name={profile?.full_name} email={user?.email} size="xs" fallbackClassName="bg-sidebar-accent text-sidebar-accent-foreground" />
-                  <div className="flex flex-col items-start text-left flex-1 min-w-0">
-                    <span className="text-sm font-medium truncate max-w-[120px]">{profile?.full_name || user?.email?.split('@')[0]}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-muted-foreground truncate">{profile?.username ? `@${profile.username}` : user?.email?.split('@')[0]}</span>
-                      {profile?.plan && profile.plan !== 'free' && (
-                        <Badge variant="default" className="h-4 text-[8px] px-1 bg-amber-500 hover:bg-amber-500">
-                          <Crown className="h-2 w-2 mr-0.5" />
-                          {profile.plan.toUpperCase()}
-                        </Badge>
-                      )}
+                  {!isCollapsed && (
+                    <div className="flex flex-col items-start text-left flex-1 min-w-0">
+                      <span className="text-sm font-medium truncate max-w-[100px]">{profile?.full_name || user?.email?.split('@')[0]}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-muted-foreground truncate">{profile?.username ? `@${profile.username}` : user?.email?.split('@')[0]}</span>
+                        {profile?.plan && profile.plan !== 'free' && (
+                          <Badge variant="default" className="h-4 text-[8px] px-1 bg-amber-500 hover:bg-amber-500">
+                            <Crown className="h-2 w-2 mr-0.5" />
+                            {profile.plan.toUpperCase()}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </Link>
-              </SidebarMenuButton>
+                {!isCollapsed && (
+                  <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive" onClick={handleSignOut} title="Sign Out">
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
