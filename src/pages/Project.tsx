@@ -557,23 +557,29 @@ export default function ProjectPage() {
                     {isOwner ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" disabled={statusUpdating} className="gap-2">
+                          <Button variant="outline" size="sm" disabled={statusUpdating || project.status === 'closed'} className="gap-2">
                             <span className={`h-2 w-2 rounded-full ${getStatusColor(project.status)}`} />
                             {getStatusLabel(project.status)}
                             <ChevronDown className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="bg-background border-2 border-foreground">
-                          {PROJECT_STATUSES.map((status) => (
-                            <DropdownMenuItem
-                              key={status.value}
-                              onClick={() => handleStatusChange(status.value)}
-                              className="gap-2 cursor-pointer"
-                            >
-                              <span className={`h-2 w-2 rounded-full ${getStatusColor(status.value)}`} />
-                              {status.label}
-                            </DropdownMenuItem>
-                          ))}
+                        <DropdownMenuContent align="start" className="bg-background border-2 border-foreground min-w-[180px]">
+                          {(() => {
+                            const nextStatuses = getNextStatuses(project.status);
+                            return PROJECT_STATUSES.filter(s => s.value !== project.status).map((status) => {
+                              const isRecommended = !isOwner && nextStatuses.includes(status.value);
+                              return (
+                                <DropdownMenuItem
+                                  key={status.value}
+                                  onClick={() => handleStatusChange(status.value)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <span className={`h-2 w-2 rounded-full ${getStatusColor(status.value)}`} />
+                                  {status.label}
+                                </DropdownMenuItem>
+                              );
+                            });
+                          })()}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     ) : (
