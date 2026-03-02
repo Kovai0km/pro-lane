@@ -306,6 +306,26 @@ export default function ProjectPage() {
     }
   };
 
+  // Allowed status transitions for workflow enforcement
+  const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+    draft: ['assigned'],
+    assigned: ['on_progress', 'draft'],
+    on_progress: ['review', 'assigned'],
+    review: ['revision', 'completed', 'on_progress'],
+    revision: ['on_progress', 'review'],
+    completed: ['delivered', 'review'],
+    delivered: ['closed', 'completed'],
+    closed: [],
+    pending: ['assigned', 'draft', 'on_progress'],
+    in_progress: ['review', 'assigned'],
+  };
+
+  const getNextStatuses = (currentStatus: string): string[] => {
+    // Owner can override workflow and set any status
+    if (isOwner) return PROJECT_STATUSES.map(s => s.value);
+    return ALLOWED_TRANSITIONS[currentStatus] || [];
+  };
+
   const handleStatusChange = async (newStatus: string) => {
     if (!project) return;
 
@@ -319,9 +339,21 @@ export default function ProjectPage() {
       if (error) throw error;
 
       setProject({ ...project, status: newStatus });
+
+      // Workflow-aware toast messages
+      const workflowMessages: Record<string, string> = {
+        assigned: 'Task has been assigned. The assignee will be notified.',
+        on_progress: 'Work has started. The creator will be notified.',
+        review: 'Submitted for review. Reviewers will be notified.',
+        revision: 'Changes requested. The assignee will be notified.',
+        completed: 'Work completed! Ready for delivery.',
+        delivered: 'Project delivered. Admin will be notified.',
+        closed: 'Project closed and archived.',
+      };
+
       toast({
-        title: 'Status updated',
-        description: `Project status changed to ${getStatusLabel(newStatus)}`,
+        title: `Status → ${getStatusLabel(newStatus)}`,
+        description: workflowMessages[newStatus] || `Project status changed to ${getStatusLabel(newStatus)}`,
       });
     } catch (error: any) {
       toast({
