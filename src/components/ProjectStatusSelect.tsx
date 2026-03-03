@@ -66,6 +66,7 @@ export function getStatusVariant(status: string): 'default' | 'secondary' | 'des
     review: 'secondary',
     revision: 'destructive',
     completed: 'default',
+    approved: 'default',
     delivered: 'default',
     closed: 'outline',
   };
