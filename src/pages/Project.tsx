@@ -25,7 +25,7 @@ import { ProjectAssignment } from '@/components/ProjectAssignment';
 import { VideoPlayer, VideoPlayerRef } from '@/components/VideoPlayer';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DiscussionTab } from '@/components/project/DiscussionTab';
-
+import { WorkflowRoles } from '@/components/project/WorkflowRoles';
 
 const PROJECT_STATUSES = [
   { value: 'draft', label: 'Draft' },

@@ -46,7 +46,8 @@ const STATUS_SECTIONS = [
   { key: 'in_progress', label: 'Active Tasks', statuses: ['on_progress', 'in_progress'], icon: Clock, description: 'Work currently in progress' },
   { key: 'pending_review', label: 'Pending Review', statuses: ['review'], icon: AlertTriangle, description: 'Submitted for review' },
   { key: 'needs_revision', label: 'Needs Revision', statuses: ['revision'], icon: ArrowDown, description: 'Changes requested' },
-  { key: 'completed', label: 'Ready for Delivery', statuses: ['completed'], icon: CheckCircle2, description: 'Completed and ready to deliver' },
+  { key: 'completed', label: 'Completed', statuses: ['completed'], icon: CheckCircle2, description: 'Completed and ready for approval' },
+  { key: 'approved', label: 'Approved', statuses: ['approved'], icon: CheckCircle2, description: 'Approved and ready for delivery' },
   { key: 'delivered', label: 'Delivered', statuses: ['delivered'], icon: Send, description: 'Sent to client' },
 ];
 
