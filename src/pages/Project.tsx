@@ -649,14 +649,6 @@ export default function ProjectPage() {
                 </div>
                 <div className="flex gap-2">
                   {isOwner && (
-                    <ProjectAssignment 
-                      projectId={project.id} 
-                      currentAssignee={project.assigned_to}
-                      onAssigned={() => fetchProject()}
-                      allowSelfAssign={isOwner}
-                    />
-                  )}
-                  {isOwner && (
                     <Button variant="outline" size="default" className="h-10 px-4" onClick={() => setEditing(true)}>
                       <Edit2 className="mr-2 h-4 w-4" />
                       Edit
