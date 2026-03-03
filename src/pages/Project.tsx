@@ -326,24 +326,36 @@ export default function ProjectPage() {
     }
   };
 
-  // Allowed status transitions for workflow enforcement
-  const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-    draft: ['assigned'],
-    assigned: ['on_progress', 'draft'],
-    on_progress: ['review', 'assigned'],
-    review: ['revision', 'completed', 'on_progress'],
-    revision: ['on_progress', 'review'],
-    completed: ['delivered', 'review'],
-    delivered: ['closed', 'completed'],
-    closed: [],
-    pending: ['assigned', 'draft', 'on_progress'],
-    in_progress: ['review', 'assigned'],
+  // Role-based workflow enforcement
+  const getUserWorkflowRole = (): WorkflowRole | null => {
+    if (!project || !user) return null;
+    if (project.created_by === user.id) return 'owner';
+    if (project.assigned_to === user.id) return 'assignee';
+    if (project.reviewer_id === user.id) return 'reviewer';
+    if (project.approver_id === user.id) return 'approver';
+    return null;
   };
 
   const getNextStatuses = (currentStatus: string): string[] => {
-    // Owner can override workflow and set any status
-    if (isOwner) return PROJECT_STATUSES.map(s => s.value);
-    return ALLOWED_TRANSITIONS[currentStatus] || [];
+    const userRole = getUserWorkflowRole();
+    // Owner can always override
+    if (userRole === 'owner') {
+      return PROJECT_STATUSES.map(s => s.value).filter(s => s !== currentStatus);
+    }
+    const config = STATUS_ROLE_MAP[currentStatus];
+    if (!config) return [];
+    // Only allow if user has the right role
+    if (userRole === config.allowedBy) return config.transitions;
+    return [];
+  };
+
+  const canChangeStatus = (): boolean => {
+    if (!project || project.status === 'closed') return false;
+    const userRole = getUserWorkflowRole();
+    if (!userRole) return false;
+    if (userRole === 'owner') return true;
+    const config = STATUS_ROLE_MAP[project.status];
+    return config?.allowedBy === userRole && config.transitions.length > 0;
   };
 
   const handleStatusChange = async (newStatus: string) => {
