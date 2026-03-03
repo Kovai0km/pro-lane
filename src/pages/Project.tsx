@@ -375,11 +375,12 @@ export default function ProjectPage() {
       // Workflow-aware toast messages
       const workflowMessages: Record<string, string> = {
         assigned: 'Task has been assigned. The assignee will be notified.',
-        on_progress: 'Work has started. The creator will be notified.',
-        review: 'Submitted for review. Reviewers will be notified.',
+        on_progress: 'Work has started. The owner will be notified.',
+        review: 'Submitted for review. The reviewer will be notified.',
         revision: 'Changes requested. The assignee will be notified.',
-        completed: 'Work completed! Ready for delivery.',
-        delivered: 'Project delivered. Admin will be notified.',
+        completed: 'Work completed! The reviewer can now approve.',
+        approved: 'Approved! The approver can now deliver.',
+        delivered: 'Project delivered. The owner will be notified.',
         closed: 'Project closed and archived.',
       };
 
