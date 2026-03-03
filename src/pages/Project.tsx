@@ -55,6 +55,8 @@ interface Project {
   team_id: string | null;
   created_by: string;
   assigned_to: string | null;
+  reviewer_id: string | null;
+  approver_id: string | null;
 }
 
 interface ProjectOutput {
