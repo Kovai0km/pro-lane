@@ -639,6 +639,13 @@ export default function ProjectPage() {
                       </div>
                     )}
                   </div>
+                  {/* Workflow Role Assignments */}
+                  {isOwner && (
+                    <WorkflowRoles
+                      project={project}
+                      onUpdated={fetchProject}
+                    />
+                  )}
                 </div>
                 <div className="flex gap-2">
                   {isOwner && (
