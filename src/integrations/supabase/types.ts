@@ -627,6 +627,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          approver_id: string | null
           assigned_date: string | null
           assigned_to: string | null
           created_at: string | null
@@ -639,12 +640,14 @@ export type Database = {
           organization_id: string | null
           priority: Database["public"]["Enums"]["project_priority"]
           project_code: string | null
+          reviewer_id: string | null
           status: Database["public"]["Enums"]["project_status"]
           team_id: string | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          approver_id?: string | null
           assigned_date?: string | null
           assigned_to?: string | null
           created_at?: string | null
@@ -657,12 +660,14 @@ export type Database = {
           organization_id?: string | null
           priority?: Database["public"]["Enums"]["project_priority"]
           project_code?: string | null
+          reviewer_id?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           team_id?: string | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          approver_id?: string | null
           assigned_date?: string | null
           assigned_to?: string | null
           created_at?: string | null
@@ -675,6 +680,7 @@ export type Database = {
           organization_id?: string | null
           priority?: Database["public"]["Enums"]["project_priority"]
           project_code?: string | null
+          reviewer_id?: string | null
           status?: Database["public"]["Enums"]["project_status"]
           team_id?: string | null
           title?: string
@@ -942,6 +948,7 @@ export type Database = {
         | "revision"
         | "delivered"
         | "closed"
+        | "approved"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1084,6 +1091,7 @@ export const Constants = {
         "revision",
         "delivered",
         "closed",
+        "approved",
       ],
     },
   },

@@ -8,6 +8,7 @@ const PROJECT_STATUSES = [
   { value: 'review', label: 'Review', color: 'bg-purple-500' },
   { value: 'revision', label: 'Revision', color: 'bg-orange-500' },
   { value: 'completed', label: 'Completed', color: 'bg-green-500' },
+  { value: 'approved', label: 'Approved', color: 'bg-teal-500' },
   { value: 'delivered', label: 'Delivered', color: 'bg-emerald-500' },
   { value: 'closed', label: 'Closed', color: 'bg-slate-500' },
 ] as const;
@@ -65,6 +66,7 @@ export function getStatusVariant(status: string): 'default' | 'secondary' | 'des
     review: 'secondary',
     revision: 'destructive',
     completed: 'default',
+    approved: 'default',
     delivered: 'default',
     closed: 'outline',
   };

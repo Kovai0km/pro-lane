@@ -25,7 +25,7 @@ import { ProjectAssignment } from '@/components/ProjectAssignment';
 import { VideoPlayer, VideoPlayerRef } from '@/components/VideoPlayer';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DiscussionTab } from '@/components/project/DiscussionTab';
-
+import { WorkflowRoles } from '@/components/project/WorkflowRoles';
 
 const PROJECT_STATUSES = [
   { value: 'draft', label: 'Draft' },
@@ -34,6 +34,7 @@ const PROJECT_STATUSES = [
   { value: 'review', label: 'Review' },
   { value: 'revision', label: 'Revision' },
   { value: 'completed', label: 'Completed' },
+  { value: 'approved', label: 'Approved' },
   { value: 'delivered', label: 'Delivered' },
   { value: 'closed', label: 'Closed' },
 ] as const;
@@ -54,6 +55,8 @@ interface Project {
   team_id: string | null;
   created_by: string;
   assigned_to: string | null;
+  reviewer_id: string | null;
+  approver_id: string | null;
 }
 
 interface ProjectOutput {
@@ -88,7 +91,24 @@ interface Comment {
 }
 
 
-type ProjectStatus = 'draft' | 'pending' | 'assigned' | 'on_progress' | 'in_progress' | 'review' | 'revision' | 'completed' | 'delivered' | 'closed';
+type ProjectStatus = 'draft' | 'pending' | 'assigned' | 'on_progress' | 'in_progress' | 'review' | 'revision' | 'completed' | 'approved' | 'delivered' | 'closed';
+
+// Role-based workflow: which role controls which status transition
+type WorkflowRole = 'owner' | 'assignee' | 'reviewer' | 'approver';
+
+const STATUS_ROLE_MAP: Record<string, { allowedBy: WorkflowRole; transitions: string[] }> = {
+  draft: { allowedBy: 'owner', transitions: ['assigned'] },
+  assigned: { allowedBy: 'assignee', transitions: ['on_progress'] },
+  on_progress: { allowedBy: 'assignee', transitions: ['review'] },
+  review: { allowedBy: 'reviewer', transitions: ['revision', 'completed'] },
+  revision: { allowedBy: 'assignee', transitions: ['on_progress', 'review'] },
+  completed: { allowedBy: 'reviewer', transitions: ['approved'] },
+  approved: { allowedBy: 'approver', transitions: ['delivered'] },
+  delivered: { allowedBy: 'owner', transitions: ['closed'] },
+  closed: { allowedBy: 'owner', transitions: [] },
+  pending: { allowedBy: 'owner', transitions: ['assigned', 'draft'] },
+  in_progress: { allowedBy: 'assignee', transitions: ['review'] },
+};
 
 // Helper Components
 const PriorityBadge = ({ priority }: { priority: string }) => {
@@ -306,24 +326,36 @@ export default function ProjectPage() {
     }
   };
 
-  // Allowed status transitions for workflow enforcement
-  const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-    draft: ['assigned'],
-    assigned: ['on_progress', 'draft'],
-    on_progress: ['review', 'assigned'],
-    review: ['revision', 'completed', 'on_progress'],
-    revision: ['on_progress', 'review'],
-    completed: ['delivered', 'review'],
-    delivered: ['closed', 'completed'],
-    closed: [],
-    pending: ['assigned', 'draft', 'on_progress'],
-    in_progress: ['review', 'assigned'],
+  // Role-based workflow enforcement
+  const getUserWorkflowRole = (): WorkflowRole | null => {
+    if (!project || !user) return null;
+    if (project.created_by === user.id) return 'owner';
+    if (project.assigned_to === user.id) return 'assignee';
+    if (project.reviewer_id === user.id) return 'reviewer';
+    if (project.approver_id === user.id) return 'approver';
+    return null;
   };
 
   const getNextStatuses = (currentStatus: string): string[] => {
-    // Owner can override workflow and set any status
-    if (isOwner) return PROJECT_STATUSES.map(s => s.value);
-    return ALLOWED_TRANSITIONS[currentStatus] || [];
+    const userRole = getUserWorkflowRole();
+    // Owner can always override
+    if (userRole === 'owner') {
+      return PROJECT_STATUSES.map(s => s.value).filter(s => s !== currentStatus);
+    }
+    const config = STATUS_ROLE_MAP[currentStatus];
+    if (!config) return [];
+    // Only allow if user has the right role
+    if (userRole === config.allowedBy) return config.transitions;
+    return [];
+  };
+
+  const canChangeStatus = (): boolean => {
+    if (!project || project.status === 'closed') return false;
+    const userRole = getUserWorkflowRole();
+    if (!userRole) return false;
+    if (userRole === 'owner') return true;
+    const config = STATUS_ROLE_MAP[project.status];
+    return config?.allowedBy === userRole && config.transitions.length > 0;
   };
 
   const handleStatusChange = async (newStatus: string) => {
@@ -343,11 +375,12 @@ export default function ProjectPage() {
       // Workflow-aware toast messages
       const workflowMessages: Record<string, string> = {
         assigned: 'Task has been assigned. The assignee will be notified.',
-        on_progress: 'Work has started. The creator will be notified.',
-        review: 'Submitted for review. Reviewers will be notified.',
+        on_progress: 'Work has started. The owner will be notified.',
+        review: 'Submitted for review. The reviewer will be notified.',
         revision: 'Changes requested. The assignee will be notified.',
-        completed: 'Work completed! Ready for delivery.',
-        delivered: 'Project delivered. Admin will be notified.',
+        completed: 'Work completed! The reviewer can now approve.',
+        approved: 'Approved! The approver can now deliver.',
+        delivered: 'Project delivered. The owner will be notified.',
         closed: 'Project closed and archived.',
       };
 
@@ -553,11 +586,11 @@ export default function ProjectPage() {
                     )}
                     {/* Priority Badge */}
                     <PriorityBadge priority={project.priority} />
-                    {/* Status Dropdown - only creator can change */}
-                    {isOwner ? (
+                    {/* Status Dropdown - role-based workflow */}
+                    {canChangeStatus() ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" disabled={statusUpdating || project.status === 'closed'} className="gap-2">
+                          <Button variant="outline" size="sm" disabled={statusUpdating} className="gap-2">
                             <span className={`h-2 w-2 rounded-full ${getStatusColor(project.status)}`} />
                             {getStatusLabel(project.status)}
                             <ChevronDown className="h-3 w-3" />
@@ -566,19 +599,16 @@ export default function ProjectPage() {
                         <DropdownMenuContent align="start" className="bg-background border-2 border-foreground min-w-[180px]">
                           {(() => {
                             const nextStatuses = getNextStatuses(project.status);
-                            return PROJECT_STATUSES.filter(s => s.value !== project.status).map((status) => {
-                              const isRecommended = !isOwner && nextStatuses.includes(status.value);
-                              return (
-                                <DropdownMenuItem
-                                  key={status.value}
-                                  onClick={() => handleStatusChange(status.value)}
-                                  className="gap-2 cursor-pointer"
-                                >
-                                  <span className={`h-2 w-2 rounded-full ${getStatusColor(status.value)}`} />
-                                  {status.label}
-                                </DropdownMenuItem>
-                              );
-                            });
+                            return PROJECT_STATUSES.filter(s => nextStatuses.includes(s.value)).map((status) => (
+                              <DropdownMenuItem
+                                key={status.value}
+                                onClick={() => handleStatusChange(status.value)}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <span className={`h-2 w-2 rounded-full ${getStatusColor(status.value)}`} />
+                                {status.label}
+                              </DropdownMenuItem>
+                            ));
                           })()}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -609,6 +639,13 @@ export default function ProjectPage() {
                       </div>
                     )}
                   </div>
+                  {/* Workflow Role Assignments */}
+                  {isOwner && (
+                    <WorkflowRoles
+                      project={project}
+                      onUpdated={fetchProject}
+                    />
+                  )}
                 </div>
                 <div className="flex gap-2">
                   {isOwner && (
