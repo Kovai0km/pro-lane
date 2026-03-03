@@ -91,7 +91,24 @@ interface Comment {
 }
 
 
-type ProjectStatus = 'draft' | 'pending' | 'assigned' | 'on_progress' | 'in_progress' | 'review' | 'revision' | 'completed' | 'delivered' | 'closed';
+type ProjectStatus = 'draft' | 'pending' | 'assigned' | 'on_progress' | 'in_progress' | 'review' | 'revision' | 'completed' | 'approved' | 'delivered' | 'closed';
+
+// Role-based workflow: which role controls which status transition
+type WorkflowRole = 'owner' | 'assignee' | 'reviewer' | 'approver';
+
+const STATUS_ROLE_MAP: Record<string, { allowedBy: WorkflowRole; transitions: string[] }> = {
+  draft: { allowedBy: 'owner', transitions: ['assigned'] },
+  assigned: { allowedBy: 'assignee', transitions: ['on_progress'] },
+  on_progress: { allowedBy: 'assignee', transitions: ['review'] },
+  review: { allowedBy: 'reviewer', transitions: ['revision', 'completed'] },
+  revision: { allowedBy: 'assignee', transitions: ['on_progress', 'review'] },
+  completed: { allowedBy: 'reviewer', transitions: ['approved'] },
+  approved: { allowedBy: 'approver', transitions: ['delivered'] },
+  delivered: { allowedBy: 'owner', transitions: ['closed'] },
+  closed: { allowedBy: 'owner', transitions: [] },
+  pending: { allowedBy: 'owner', transitions: ['assigned', 'draft'] },
+  in_progress: { allowedBy: 'assignee', transitions: ['review'] },
+};
 
 // Helper Components
 const PriorityBadge = ({ priority }: { priority: string }) => {
