@@ -29,6 +29,7 @@ import { WorkflowRoles } from '@/components/project/WorkflowRoles';
 import { WorkflowStepper } from '@/components/project/WorkflowStepper';
 
 const PROJECT_STATUSES = [
+  { value: 'pending', label: 'Pending' },
   { value: 'draft', label: 'Draft' },
   { value: 'assigned', label: 'Assigned' },
   { value: 'on_progress', label: 'On Progress' },
