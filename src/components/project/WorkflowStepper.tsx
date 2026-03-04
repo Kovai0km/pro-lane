@@ -14,8 +14,13 @@ const WORKFLOW_STEPS = [
   { status: 'closed', label: 'Closed', role: 'owner', icon: Crown },
 ] as const;
 
-// Revision is a special loop-back, not a linear step
 const REVISION_STATUS = 'revision';
+
+// Map pending/in_progress to their workflow equivalents
+const STATUS_ALIAS: Record<string, string> = {
+  pending: 'draft',
+  in_progress: 'on_progress',
+};
 
 interface WorkflowStepperProps {
   project: {
@@ -49,7 +54,8 @@ export function WorkflowStepper({ project }: WorkflowStepperProps) {
     }
   }, [project.created_by, project.assigned_to, project.reviewer_id, project.approver_id]);
 
-  const currentIndex = WORKFLOW_STEPS.findIndex(s => s.status === project.status);
+  const effectiveStatus = STATUS_ALIAS[project.status] || project.status;
+  const currentIndex = WORKFLOW_STEPS.findIndex(s => s.status === effectiveStatus);
   const isRevision = project.status === REVISION_STATUS;
 
   const getRoleUserId = (role: string) => {

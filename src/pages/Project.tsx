@@ -642,12 +642,11 @@ export default function ProjectPage() {
                     )}
                   </div>
                   {/* Workflow Role Assignments */}
-                  {isOwner && (
-                    <WorkflowRoles
-                      project={project}
-                      onUpdated={fetchProject}
-                    />
-                  )}
+                  <WorkflowRoles
+                    project={project}
+                    onUpdated={fetchProject}
+                    readOnly={!isOwner}
+                  />
                   {/* Workflow Progress Stepper */}
                   <WorkflowStepper project={project} />
                 </div>

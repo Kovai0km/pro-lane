@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, UserCheck, Eye, Shield, Loader2, X, Wrench } from 'lucide-react';
+import { Search, Eye, Shield, Loader2, X, Wrench } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -19,8 +19,10 @@ interface WorkflowRolesProps {
     assigned_to: string | null;
     reviewer_id: string | null;
     approver_id: string | null;
+    organization_id: string | null;
   };
   onUpdated: () => void;
+  readOnly?: boolean;
 }
 
 function RoleAssignButton({
@@ -29,14 +31,18 @@ function RoleAssignButton({
   currentUserId,
   projectId,
   column,
+  organizationId,
   onUpdated,
+  readOnly,
 }: {
   label: string;
   icon: typeof Eye;
   currentUserId: string | null;
   projectId: string;
   column: 'assigned_to' | 'reviewer_id' | 'approver_id';
+  organizationId: string | null;
   onUpdated: () => void;
+  readOnly?: boolean;
 }) {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -47,11 +53,50 @@ function RoleAssignButton({
 
   useEffect(() => {
     if (open) {
-      supabase.from('profiles').select('id, email, full_name').order('full_name').then(({ data }) => {
-        setUsers(data || []);
-      });
+      fetchOrgMembers();
     }
   }, [open]);
+
+  const fetchOrgMembers = async () => {
+    try {
+      if (organizationId) {
+        // Fetch only org members
+        const { data: orgMembers } = await supabase
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', organizationId);
+        
+        // Also include org owner
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('owner_id')
+          .eq('id', organizationId)
+          .single();
+
+        const memberIds = new Set<string>();
+        orgMembers?.forEach(m => memberIds.add(m.user_id));
+        if (org?.owner_id) memberIds.add(org.owner_id);
+
+        if (memberIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, email, full_name')
+            .in('id', Array.from(memberIds))
+            .order('full_name');
+          setUsers(profiles || []);
+        }
+      } else {
+        // No org - fetch all profiles (personal projects)
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .order('full_name');
+        setUsers(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching members:', error);
+    }
+  };
 
   useEffect(() => {
     if (currentUserId) {
@@ -72,7 +117,6 @@ function RoleAssignButton({
     setLoading(true);
     try {
       const updateData: Record<string, any> = { [column]: userId };
-      // If assigning assignee, also set status to assigned and assigned_date
       if (column === 'assigned_to') {
         updateData.assigned_date = new Date().toISOString();
       }
@@ -123,55 +167,67 @@ function RoleAssignButton({
       {currentProfile ? (
         <div className="flex items-center gap-1">
           <span className="text-xs font-medium">{currentProfile.full_name || currentProfile.email.split('@')[0]}</span>
-          <button onClick={handleRemove} className="text-muted-foreground hover:text-destructive transition-colors">
-            <X className="h-3 w-3" />
-          </button>
+          {!readOnly && (
+            <button onClick={handleRemove} className="text-muted-foreground hover:text-destructive transition-colors">
+              <X className="h-3 w-3" />
+            </button>
+          )}
         </div>
+      ) : readOnly ? (
+        <span className="text-xs text-muted-foreground italic">Not assigned</span>
       ) : (
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
-              Assign
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Assign {label}</DialogTitle>
-              <DialogDescription>Choose a team member for the {label.toLowerCase()} role.</DialogDescription>
-            </DialogHeader>
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
-            </div>
-            <ScrollArea className="h-[200px] border rounded-md">
-              {filtered.map(u => (
-                <button
-                  key={u.id}
-                  onClick={() => handleAssign(u.id)}
-                  disabled={loading}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-secondary transition-colors text-left"
-                >
-                  <div className="h-7 w-7 border rounded flex items-center justify-center text-xs font-bold">
-                    {(u.full_name || u.email).charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">{u.full_name || 'No name'}</div>
-                    <div className="text-xs text-muted-foreground">{u.email}</div>
-                  </div>
-                </button>
-              ))}
-            </ScrollArea>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <>
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setOpen(true)}>
+            Assign
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Assign {label}</DialogTitle>
+                <DialogDescription>
+                  {organizationId
+                    ? `Choose an organization member for the ${label.toLowerCase()} role.`
+                    : `Choose a user for the ${label.toLowerCase()} role.`}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search members..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+              </div>
+              <ScrollArea className="h-[200px] border rounded-md">
+                {filtered.length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">No members found</div>
+                ) : (
+                  filtered.map(u => (
+                    <button
+                      key={u.id}
+                      onClick={() => handleAssign(u.id)}
+                      disabled={loading}
+                      className="w-full flex items-center gap-3 p-3 hover:bg-secondary transition-colors text-left"
+                    >
+                      <div className="h-7 w-7 border rounded flex items-center justify-center text-xs font-bold">
+                        {(u.full_name || u.email).charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium">{u.full_name || 'No name'}</div>
+                        <div className="text-xs text-muted-foreground">{u.email}</div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </ScrollArea>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
       )}
     </div>
   );
 }
 
-export function WorkflowRoles({ project, onUpdated }: WorkflowRolesProps) {
+export function WorkflowRoles({ project, onUpdated, readOnly }: WorkflowRolesProps) {
   return (
     <div className="flex flex-wrap gap-4 mt-2">
       <RoleAssignButton
@@ -180,7 +236,9 @@ export function WorkflowRoles({ project, onUpdated }: WorkflowRolesProps) {
         currentUserId={project.assigned_to}
         projectId={project.id}
         column="assigned_to"
+        organizationId={project.organization_id}
         onUpdated={onUpdated}
+        readOnly={readOnly}
       />
       <RoleAssignButton
         label="Reviewer"
@@ -188,7 +246,9 @@ export function WorkflowRoles({ project, onUpdated }: WorkflowRolesProps) {
         currentUserId={project.reviewer_id}
         projectId={project.id}
         column="reviewer_id"
+        organizationId={project.organization_id}
         onUpdated={onUpdated}
+        readOnly={readOnly}
       />
       <RoleAssignButton
         label="Approver"
@@ -196,7 +256,9 @@ export function WorkflowRoles({ project, onUpdated }: WorkflowRolesProps) {
         currentUserId={project.approver_id}
         projectId={project.id}
         column="approver_id"
+        organizationId={project.organization_id}
         onUpdated={onUpdated}
+        readOnly={readOnly}
       />
     </div>
   );

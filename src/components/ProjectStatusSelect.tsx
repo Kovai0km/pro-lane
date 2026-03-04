@@ -2,6 +2,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 
 const PROJECT_STATUSES = [
+  { value: 'pending', label: 'Pending', color: 'bg-gray-400' },
   { value: 'draft', label: 'Draft', color: 'bg-gray-500' },
   { value: 'assigned', label: 'Assigned', color: 'bg-blue-500' },
   { value: 'on_progress', label: 'On Progress', color: 'bg-yellow-500' },
@@ -60,6 +61,7 @@ export function getStatusColor(status: string): string {
 
 export function getStatusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
   const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    pending: 'outline',
     draft: 'outline',
     assigned: 'secondary',
     on_progress: 'default',

@@ -17,12 +17,15 @@ import { Label } from '@/components/ui/label';
 import { EmojiReactionPicker } from '@/components/EmojiReactionPicker';
 import { ThreadReplies } from '@/components/ThreadReplies';
 import { UserAvatar } from '@/components/ui/user-avatar';
+import { useAuth } from '@/hooks/useAuth';
+import { cn } from '@/lib/utils';
 
 interface Profile {
   id: string;
   email: string;
   full_name: string | null;
   avatar_url?: string | null;
+  username?: string | null;
 }
 
 interface Comment {
@@ -84,6 +87,7 @@ export function DiscussionTab({
   const [members, setMembers] = useState<Profile[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
   const [reactions, setReactions] = useState<Reaction[]>([]);
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -113,7 +117,10 @@ export function DiscussionTab({
       projectMembers?.forEach(m => userIds.add(m.user_id));
       if (project?.created_by) userIds.add(project.created_by);
       if (userIds.size > 0) {
-        const { data: profiles } = await supabase.from('profiles').select('id, email, full_name').in('id', Array.from(userIds));
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, username')
+          .in('id', Array.from(userIds));
         if (profiles) setMembers(profiles);
       }
     } catch (error) { console.error('Error fetching project members:', error); }
@@ -162,16 +169,25 @@ export function DiscussionTab({
     setCursorPosition(position);
     const textBeforeCursor = value.slice(0, position);
     const atMatch = textBeforeCursor.match(/@(\w*)$/);
-    if (atMatch) { setMentionSearch(atMatch[1]); setMentionOpen(true); }
-    else { setMentionOpen(false); }
+    if (atMatch) {
+      setMentionSearch(atMatch[1]);
+      setMentionOpen(true);
+      setSelectedMentionIndex(0);
+    } else {
+      setMentionOpen(false);
+    }
+  };
+
+  const getMentionDisplayName = (member: Profile) => {
+    return member.username || member.full_name || member.email.split('@')[0];
   };
 
   const handleMentionSelect = (member: Profile) => {
     const textBeforeCursor = newComment.slice(0, cursorPosition);
     const textAfterCursor = newComment.slice(cursorPosition);
     const atIndex = textBeforeCursor.lastIndexOf('@');
-    const name = member.full_name || member.email.split('@')[0];
-    setNewComment(textBeforeCursor.slice(0, atIndex) + `@${name} ` + textAfterCursor);
+    const mentionName = getMentionDisplayName(member);
+    setNewComment(textBeforeCursor.slice(0, atIndex) + `@${mentionName} ` + textAfterCursor);
     setMentionOpen(false);
     inputRef.current?.focus();
   };
@@ -179,13 +195,33 @@ export function DiscussionTab({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
-    // No timecode in discussion - timestamps only in file comments
     await onSubmitComment(newComment.trim(), null);
     setNewComment('');
     fetchActivityLog();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionOpen && filteredMembers.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedMentionIndex(prev => Math.min(prev + 1, filteredMembers.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedMentionIndex(prev => Math.max(prev - 1, 0));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleMentionSelect(filteredMembers[selectedMentionIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setMentionOpen(false);
+        return;
+      }
+    }
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleSubmit(e as any);
@@ -195,14 +231,31 @@ export function DiscussionTab({
   const filteredMembers = members.filter(m => {
     if (m.id === user?.id) return false;
     const search = mentionSearch.toLowerCase();
-    return m.full_name?.toLowerCase().includes(search) || m.email.toLowerCase().includes(search);
+    return (
+      m.username?.toLowerCase().includes(search) ||
+      m.full_name?.toLowerCase().includes(search) ||
+      m.email.toLowerCase().includes(search)
+    );
   });
 
   const renderContentWithMentions = (content: string) => {
     const mentionRegex = /@(\w+)/g;
     const parts = content.split(mentionRegex);
     return parts.map((part, i) => {
-      if (i % 2 === 1) return <span key={i} className="text-primary font-medium">@{part}</span>;
+      if (i % 2 === 1) {
+        const isSelf = members.find(m =>
+          m.username?.toLowerCase() === part.toLowerCase() ||
+          m.full_name?.toLowerCase() === part.toLowerCase()
+        )?.id === user?.id;
+        return (
+          <span key={i} className={cn(
+            "text-primary font-medium",
+            isSelf && "bg-primary/10 px-0.5 rounded"
+          )}>
+            @{part}
+          </span>
+        );
+      }
       return part;
     });
   };
@@ -260,12 +313,24 @@ export function DiscussionTab({
                     {mentionOpen && filteredMembers.length > 0 && (
                       <div className="absolute bottom-full left-0 mb-1 w-64 bg-popover border border-border rounded-md shadow-lg z-50">
                         <div className="p-1">
-                          {filteredMembers.slice(0, 5).map((member) => (
-                            <button key={member.id} type="button" onClick={() => handleMentionSelect(member)} className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-muted text-left">
+                          {filteredMembers.slice(0, 5).map((member, idx) => (
+                            <button
+                              key={member.id}
+                              type="button"
+                              onClick={() => handleMentionSelect(member)}
+                              className={cn(
+                                "w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-muted text-left",
+                                idx === selectedMentionIndex && "bg-muted"
+                              )}
+                            >
                               <UserAvatar src={member.avatar_url} name={member.full_name} email={member.email} size="xs" />
                               <div className="flex-1 min-w-0">
-                                <div className="font-medium truncate">{member.full_name || member.email.split('@')[0]}</div>
-                                {member.full_name && <div className="text-xs text-muted-foreground truncate">{member.email}</div>}
+                                <div className="font-medium truncate">
+                                  {member.username ? `@${member.username}` : (member.full_name || member.email.split('@')[0])}
+                                </div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {member.full_name && member.username ? member.full_name : member.email}
+                                </div>
                               </div>
                             </button>
                           ))}
