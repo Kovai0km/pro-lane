@@ -647,6 +647,8 @@ export default function ProjectPage() {
                       onUpdated={fetchProject}
                     />
                   )}
+                  {/* Workflow Progress Stepper */}
+                  <WorkflowStepper project={project} />
                 </div>
                 <div className="flex gap-2">
                   {isOwner && (
