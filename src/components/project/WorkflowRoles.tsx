@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, UserCheck, Eye, Shield, Loader2, X } from 'lucide-react';
+import { Search, UserCheck, Eye, Shield, Loader2, X, Wrench } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -35,7 +35,7 @@ function RoleAssignButton({
   icon: typeof Eye;
   currentUserId: string | null;
   projectId: string;
-  column: 'reviewer_id' | 'approver_id';
+  column: 'assigned_to' | 'reviewer_id' | 'approver_id';
   onUpdated: () => void;
 }) {
   const { toast } = useToast();
@@ -71,9 +71,14 @@ function RoleAssignButton({
   const handleAssign = async (userId: string) => {
     setLoading(true);
     try {
+      const updateData: Record<string, any> = { [column]: userId };
+      // If assigning assignee, also set status to assigned and assigned_date
+      if (column === 'assigned_to') {
+        updateData.assigned_date = new Date().toISOString();
+      }
       const { error } = await supabase
         .from('projects')
-        .update({ [column]: userId })
+        .update(updateData)
         .eq('id', projectId);
       if (error) throw error;
 
@@ -169,6 +174,14 @@ function RoleAssignButton({
 export function WorkflowRoles({ project, onUpdated }: WorkflowRolesProps) {
   return (
     <div className="flex flex-wrap gap-4 mt-2">
+      <RoleAssignButton
+        label="Assignee"
+        icon={Wrench}
+        currentUserId={project.assigned_to}
+        projectId={project.id}
+        column="assigned_to"
+        onUpdated={onUpdated}
+      />
       <RoleAssignButton
         label="Reviewer"
         icon={Eye}
