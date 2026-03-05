@@ -46,6 +46,8 @@ export default function SettingsPage() {
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [designation, setDesignation] = useState('');
+  const [address, setAddress] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [plan, setPlan] = useState('free');
