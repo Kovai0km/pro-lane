@@ -93,7 +93,7 @@ interface Comment {
 }
 
 
-type ProjectStatus = 'draft' | 'pending' | 'assigned' | 'on_progress' | 'in_progress' | 'review' | 'revision' | 'completed' | 'approved' | 'delivered' | 'closed';
+type ProjectStatus = typeof PROJECT_STATUSES[number]['value'];
 
 // Role-based workflow: which role controls which status transition
 type WorkflowRole = 'owner' | 'assignee' | 'reviewer' | 'approver';
