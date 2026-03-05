@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Send, MessageSquare, Paperclip, X, FolderOpen, FileOutput, Clock, User, Upload, GitCommit, MessageCircle } from 'lucide-react';
+import { Loader2, Send, MessageSquare, Paperclip, X, FolderOpen, FileOutput, Clock, User, Upload, GitCommit, MessageCircle, Trash2 } from 'lucide-react';
 import { FileUpload } from '@/components/FileUpload';
 import { supabase } from '@/integrations/supabase/client';
 import {
