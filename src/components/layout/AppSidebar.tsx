@@ -354,17 +354,6 @@ export function AppSidebar() {
         <SidebarFooter className="border-t border-sidebar-border">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton onClick={toggleTheme} tooltip={theme === 'light' ? 'Dark mode' : 'Light mode'}>
-                {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                <span>{theme === 'light' ? 'Dark mode' : 'Light mode'}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Settings">
-                <Link to="/settings"><Settings className="h-4 w-4" /><span>Settings</span></Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
               <div className="flex items-center gap-2 w-full px-2 py-1.5">
                 <Link to={profile?.username ? `/u/${profile.username}` : '/profile'} className="flex items-center gap-3 flex-1 min-w-0">
                   <UserAvatar src={profile?.avatar_url} name={profile?.full_name} email={user?.email} size="xs" fallbackClassName="bg-sidebar-accent text-sidebar-accent-foreground" />
@@ -384,9 +373,14 @@ export function AppSidebar() {
                   )}
                 </Link>
                 {!isCollapsed && (
-                  <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive" onClick={handleSignOut} title="Sign Out">
-                    <LogOut className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-muted-foreground" asChild title="Settings">
+                      <Link to="/settings"><Settings className="h-4 w-4" /></Link>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-destructive" onClick={handleSignOut} title="Sign Out">
+                      <LogOut className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
             </SidebarMenuItem>

@@ -222,7 +222,7 @@ export default function MembersPage() {
           )}
 
           {/* Invite Dialog - reuse MemberManagement for invite functionality */}
-          {showInvite && isOwner && orgId && (
+          {showInvite && orgId && (
             <div className="fixed inset-0 z-50 bg-background/80 flex items-center justify-center p-4" onClick={() => setShowInvite(false)}>
               <div className="bg-background border rounded-lg shadow-lg max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-4">
