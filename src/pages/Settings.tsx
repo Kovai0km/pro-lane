@@ -80,12 +80,14 @@ export default function SettingsPage() {
   };
 
   const fetchProfileData = async () => {
-    const { data } = await supabase.from('profiles').select('full_name, username, avatar_url, plan').eq('id', user!.id).single();
+    const { data } = await supabase.from('profiles').select('full_name, username, avatar_url, plan, designation, address').eq('id', user!.id).single();
     if (data) {
       setFullName(data.full_name || '');
       setUsername(data.username || '');
       setAvatarUrl(data.avatar_url || '');
       setPlan(data.plan || 'free');
+      setDesignation((data as any).designation || '');
+      setAddress((data as any).address || '');
     }
   };
 
