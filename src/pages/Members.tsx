@@ -92,7 +92,7 @@ export default function MembersPage() {
 
   const handleMemberClick = (member: Member) => {
     const username = member.profile?.username || member.profile?.email?.split('@')[0];
-    if (username) navigate(`/user/${username}`);
+    if (username) navigate(`/u/${username}`);
   };
 
   if (loading) {
