@@ -113,7 +113,7 @@ export default function SettingsPage() {
     }
     setProfileSaving(true);
     try {
-      const { error } = await supabase.from('profiles').update({ full_name: fullName.trim() || null, username: username.trim() || null, avatar_url: avatarUrl.trim() || null }).eq('id', user.id);
+      const { error } = await supabase.from('profiles').update({ full_name: fullName.trim() || null, username: username.trim() || null, avatar_url: avatarUrl.trim() || null, designation: designation.trim() || null, address: address.trim() || null } as any).eq('id', user.id);
       if (error) { if (error.code === '23505') throw new Error('Username already taken.'); throw error; }
       toast({ title: 'Profile updated' });
     } catch (error: any) {
