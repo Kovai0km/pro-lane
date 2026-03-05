@@ -287,6 +287,20 @@ export function FileCommentsPanel({
                     <span className="text-xs text-muted-foreground">
                       {formatTime(comment.created_at)}
                     </span>
+                    {user && comment.user_id === user.id && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await supabase.from('comments').delete().eq('id', comment.id);
+                            fetchComments();
+                          } catch (e) { console.error(e); }
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                        title="Delete comment"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                   <div className={cn(
                     "rounded-lg px-3 py-2 text-sm",

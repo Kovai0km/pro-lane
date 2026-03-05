@@ -417,6 +417,20 @@ export function DiscussionTab({
                         <span className="font-medium text-sm">{comment.profiles?.full_name || comment.profiles?.email}</span>
                         <span className="text-xs text-muted-foreground">{new Date(comment.created_at).toLocaleString()}</span>
                         <EmojiReactionPicker commentId={comment.id} reactions={commentReactions} onReactionChange={fetchReactions} compact />
+                        {user && comment.user_id === user.id && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await supabase.from('comments').delete().eq('id', comment.id);
+                                onSubmitComment('__refetch__', null).catch(() => {});
+                              } catch (e) { console.error(e); }
+                            }}
+                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                            title="Delete comment"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                       <p className="text-sm mt-1">{renderContentWithMentions(comment.content)}</p>
                       <ThreadReplies parentMessage={comment} replies={commentReplies} onReplyAdded={() => { onSubmitComment('', null); }} type="comment" projectId={projectId} />
