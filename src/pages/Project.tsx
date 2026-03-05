@@ -367,7 +367,7 @@ export default function ProjectPage() {
     try {
       const { error } = await supabase
         .from('projects')
-        .update({ status: newStatus as ProjectStatus })
+        .update({ status: newStatus })
         .eq('id', project.id);
 
       if (error) throw error;
