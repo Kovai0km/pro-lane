@@ -111,17 +111,36 @@ export function DiscussionTab({
 
   const fetchProjectMembers = async () => {
     try {
-      const { data: projectMembers } = await supabase.from('project_members').select('user_id').eq('project_id', projectId);
-      const { data: project } = await supabase.from('projects').select('created_by').eq('id', projectId).single();
-      const userIds = new Set<string>();
-      projectMembers?.forEach(m => userIds.add(m.user_id));
-      if (project?.created_by) userIds.add(project.created_by);
-      if (userIds.size > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, email, full_name, username')
-          .in('id', Array.from(userIds));
-        if (profiles) setMembers(profiles);
+      // First try to get org members if project has an org
+      const { data: project } = await supabase.from('projects').select('created_by, organization_id').eq('id', projectId).single();
+      
+      if (project?.organization_id) {
+        // Fetch all org members
+        const { data: orgMembers } = await supabase.from('organization_members').select('user_id').eq('organization_id', project.organization_id);
+        const userIds = new Set<string>();
+        orgMembers?.forEach(m => userIds.add(m.user_id));
+        if (project.created_by) userIds.add(project.created_by);
+        
+        if (userIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, email, full_name, username, avatar_url')
+            .in('id', Array.from(userIds));
+          if (profiles) setMembers(profiles);
+        }
+      } else {
+        // Fallback: project members + creator
+        const { data: projectMembers } = await supabase.from('project_members').select('user_id').eq('project_id', projectId);
+        const userIds = new Set<string>();
+        projectMembers?.forEach(m => userIds.add(m.user_id));
+        if (project?.created_by) userIds.add(project.created_by);
+        if (userIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, email, full_name, username, avatar_url')
+            .in('id', Array.from(userIds));
+          if (profiles) setMembers(profiles);
+        }
       }
     } catch (error) { console.error('Error fetching project members:', error); }
   };
