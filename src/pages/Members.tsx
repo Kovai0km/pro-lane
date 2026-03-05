@@ -114,12 +114,10 @@ export default function MembersPage() {
               <h1 className="text-3xl font-bold mb-1">Members</h1>
               <p className="text-muted-foreground">{members.length} member{members.length !== 1 ? 's' : ''} in {orgName}</p>
             </div>
-            {isOwner && (
-              <Button onClick={() => setShowInvite(true)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Invite Member
-              </Button>
-            )}
+            <Button onClick={() => setShowInvite(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Invite Member
+            </Button>
           </div>
 
           {/* Search & View Toggle */}
