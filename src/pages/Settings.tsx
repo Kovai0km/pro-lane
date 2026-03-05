@@ -196,6 +196,14 @@ export default function SettingsPage() {
                         <Input id="settingsUsername" placeholder="johndoe" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} className="pl-7" maxLength={30} />
                       </div>
                     </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="settingsDesignation">Designation</Label>
+                      <Input id="settingsDesignation" placeholder="e.g. Video Editor, Designer" value={designation} onChange={(e) => setDesignation(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="settingsAddress">Address</Label>
+                      <Input id="settingsAddress" placeholder="City, Country" value={address} onChange={(e) => setAddress(e.target.value)} />
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-end">
