@@ -46,6 +46,8 @@ export default function SettingsPage() {
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [designation, setDesignation] = useState('');
+  const [address, setAddress] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [plan, setPlan] = useState('free');
@@ -78,12 +80,14 @@ export default function SettingsPage() {
   };
 
   const fetchProfileData = async () => {
-    const { data } = await supabase.from('profiles').select('full_name, username, avatar_url, plan').eq('id', user!.id).single();
+    const { data } = await supabase.from('profiles').select('full_name, username, avatar_url, plan, designation, address').eq('id', user!.id).single();
     if (data) {
       setFullName(data.full_name || '');
       setUsername(data.username || '');
       setAvatarUrl(data.avatar_url || '');
       setPlan(data.plan || 'free');
+      setDesignation((data as any).designation || '');
+      setAddress((data as any).address || '');
     }
   };
 
@@ -109,7 +113,7 @@ export default function SettingsPage() {
     }
     setProfileSaving(true);
     try {
-      const { error } = await supabase.from('profiles').update({ full_name: fullName.trim() || null, username: username.trim() || null, avatar_url: avatarUrl.trim() || null }).eq('id', user.id);
+      const { error } = await supabase.from('profiles').update({ full_name: fullName.trim() || null, username: username.trim() || null, avatar_url: avatarUrl.trim() || null, designation: designation.trim() || null, address: address.trim() || null } as any).eq('id', user.id);
       if (error) { if (error.code === '23505') throw new Error('Username already taken.'); throw error; }
       toast({ title: 'Profile updated' });
     } catch (error: any) {
@@ -191,6 +195,14 @@ export default function SettingsPage() {
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
                         <Input id="settingsUsername" placeholder="johndoe" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} className="pl-7" maxLength={30} />
                       </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="settingsDesignation">Designation</Label>
+                      <Input id="settingsDesignation" placeholder="e.g. Video Editor, Designer" value={designation} onChange={(e) => setDesignation(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="settingsAddress">Address</Label>
+                      <Input id="settingsAddress" placeholder="City, Country" value={address} onChange={(e) => setAddress(e.target.value)} />
                     </div>
                   </div>
                 </div>

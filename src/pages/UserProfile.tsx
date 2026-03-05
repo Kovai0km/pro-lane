@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Calendar, Crown, Mail, MessageSquare, User, Phone, Globe, Twitter, Linkedin, Github } from 'lucide-react';
+import { Loader2, Calendar, Crown, Mail, MessageSquare, User, Phone, Globe, Twitter, Linkedin, Github, Briefcase, MapPin } from 'lucide-react';
 
 interface UserProfileData {
   id: string;
@@ -19,6 +19,8 @@ interface UserProfileData {
   created_at: string | null;
   phone: string | null;
   social_links: any;
+  designation: string | null;
+  address: string | null;
 }
 
 export default function UserProfilePage() {
@@ -33,9 +35,9 @@ export default function UserProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      let { data, error } = await supabase.from('profiles').select('id, username, email, full_name, avatar_url, plan, created_at, phone, social_links').eq('username', username).single();
+      let { data, error } = await supabase.from('profiles').select('id, username, email, full_name, avatar_url, plan, created_at, phone, social_links, designation, address').eq('username', username).single();
       if (error || !data) {
-        const { data: emailData, error: emailError } = await supabase.from('profiles').select('id, username, email, full_name, avatar_url, plan, created_at, phone, social_links').ilike('email', `${username}@%`).single();
+        const { data: emailData, error: emailError } = await supabase.from('profiles').select('id, username, email, full_name, avatar_url, plan, created_at, phone, social_links, designation, address').ilike('email', `${username}@%`).single();
         if (emailError || !emailData) { setNotFound(true); setLoading(false); return; }
         data = emailData;
       }
@@ -78,17 +80,24 @@ export default function UserProfilePage() {
                     <h1 className="text-2xl font-bold">{profile.full_name || 'No Name'}</h1>
                     {profile.plan === 'pro' && <Badge className="bg-amber-500 hover:bg-amber-500"><Crown className="h-3 w-3 mr-1" />PRO</Badge>}
                   </div>
-                  {profile.username && <p className="text-muted-foreground mb-4">@{profile.username}</p>}
+                  {profile.username && <p className="text-muted-foreground mb-2">@{profile.username}</p>}
+                  {profile.designation && (
+                    <div className="flex items-center justify-center md:justify-start gap-1 text-sm text-muted-foreground mb-2">
+                      <Briefcase className="h-4 w-4" />
+                      <span>{profile.designation}</span>
+                    </div>
+                  )}
                   <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-muted-foreground mb-4">
                     <div className="flex items-center gap-1"><Calendar className="h-4 w-4" /><span>Joined {memberSince}</span></div>
                     <div className="flex items-center gap-1"><Mail className="h-4 w-4" /><span>{profile.email}</span></div>
                     {profile.phone && <div className="flex items-center gap-1"><Phone className="h-4 w-4" /><span>{profile.phone}</span></div>}
+                    {profile.address && <div className="flex items-center gap-1"><MapPin className="h-4 w-4" /><span>{profile.address}</span></div>}
                   </div>
                   <div className="flex flex-wrap justify-center md:justify-start gap-2">
                     {isOwnProfile ? (
-                      <Button asChild><Link to="/profile">Edit Profile</Link></Button>
+                      <Button asChild><Link to="/settings">Edit Profile</Link></Button>
                     ) : (
-                      <Button onClick={() => navigate(`/org/${''}`)}><MessageSquare className="h-4 w-4 mr-2" />Send Message</Button>
+                      <Button onClick={() => navigate(`/dashboard`)}><MessageSquare className="h-4 w-4 mr-2" />Send Message</Button>
                     )}
                   </div>
                 </div>

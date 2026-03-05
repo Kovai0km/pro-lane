@@ -93,7 +93,7 @@ interface Comment {
 }
 
 
-type ProjectStatus = 'draft' | 'pending' | 'assigned' | 'on_progress' | 'in_progress' | 'review' | 'revision' | 'completed' | 'approved' | 'delivered' | 'closed';
+type ProjectStatus = typeof PROJECT_STATUSES[number]['value'];
 
 // Role-based workflow: which role controls which status transition
 type WorkflowRole = 'owner' | 'assignee' | 'reviewer' | 'approver';
@@ -304,7 +304,7 @@ export default function ProjectPage() {
         .update({
           title: editedProject.title,
           description: editedProject.description,
-          status: editedProject.status as ProjectStatus,
+          status: editedProject.status as any,
           due_date: editedProject.due_date,
         })
         .eq('id', project.id);
@@ -367,7 +367,7 @@ export default function ProjectPage() {
     try {
       const { error } = await supabase
         .from('projects')
-        .update({ status: newStatus as ProjectStatus })
+        .update({ status: newStatus as any })
         .eq('id', project.id);
 
       if (error) throw error;

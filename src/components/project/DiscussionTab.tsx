@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Send, MessageSquare, Paperclip, X, FolderOpen, FileOutput, Clock, User, Upload, GitCommit, MessageCircle } from 'lucide-react';
+import { Loader2, Send, MessageSquare, Paperclip, X, FolderOpen, FileOutput, Clock, User, Upload, GitCommit, MessageCircle, Trash2 } from 'lucide-react';
 import { FileUpload } from '@/components/FileUpload';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -111,17 +111,36 @@ export function DiscussionTab({
 
   const fetchProjectMembers = async () => {
     try {
-      const { data: projectMembers } = await supabase.from('project_members').select('user_id').eq('project_id', projectId);
-      const { data: project } = await supabase.from('projects').select('created_by').eq('id', projectId).single();
-      const userIds = new Set<string>();
-      projectMembers?.forEach(m => userIds.add(m.user_id));
-      if (project?.created_by) userIds.add(project.created_by);
-      if (userIds.size > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, email, full_name, username')
-          .in('id', Array.from(userIds));
-        if (profiles) setMembers(profiles);
+      // First try to get org members if project has an org
+      const { data: project } = await supabase.from('projects').select('created_by, organization_id').eq('id', projectId).single();
+      
+      if (project?.organization_id) {
+        // Fetch all org members
+        const { data: orgMembers } = await supabase.from('organization_members').select('user_id').eq('organization_id', project.organization_id);
+        const userIds = new Set<string>();
+        orgMembers?.forEach(m => userIds.add(m.user_id));
+        if (project.created_by) userIds.add(project.created_by);
+        
+        if (userIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, email, full_name, username, avatar_url')
+            .in('id', Array.from(userIds));
+          if (profiles) setMembers(profiles);
+        }
+      } else {
+        // Fallback: project members + creator
+        const { data: projectMembers } = await supabase.from('project_members').select('user_id').eq('project_id', projectId);
+        const userIds = new Set<string>();
+        projectMembers?.forEach(m => userIds.add(m.user_id));
+        if (project?.created_by) userIds.add(project.created_by);
+        if (userIds.size > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, email, full_name, username, avatar_url')
+            .in('id', Array.from(userIds));
+          if (profiles) setMembers(profiles);
+        }
       }
     } catch (error) { console.error('Error fetching project members:', error); }
   };
@@ -398,6 +417,20 @@ export function DiscussionTab({
                         <span className="font-medium text-sm">{comment.profiles?.full_name || comment.profiles?.email}</span>
                         <span className="text-xs text-muted-foreground">{new Date(comment.created_at).toLocaleString()}</span>
                         <EmojiReactionPicker commentId={comment.id} reactions={commentReactions} onReactionChange={fetchReactions} compact />
+                        {user && comment.user_id === user.id && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                await supabase.from('comments').delete().eq('id', comment.id);
+                                onSubmitComment('__refetch__', null).catch(() => {});
+                              } catch (e) { console.error(e); }
+                            }}
+                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all"
+                            title="Delete comment"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                       <p className="text-sm mt-1">{renderContentWithMentions(comment.content)}</p>
                       <ThreadReplies parentMessage={comment} replies={commentReplies} onReplyAdded={() => { onSubmitComment('', null); }} type="comment" projectId={projectId} />

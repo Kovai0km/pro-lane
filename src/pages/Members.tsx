@@ -92,7 +92,7 @@ export default function MembersPage() {
 
   const handleMemberClick = (member: Member) => {
     const username = member.profile?.username || member.profile?.email?.split('@')[0];
-    if (username) navigate(`/user/${username}`);
+    if (username) navigate(`/u/${username}`);
   };
 
   if (loading) {
@@ -114,12 +114,10 @@ export default function MembersPage() {
               <h1 className="text-3xl font-bold mb-1">Members</h1>
               <p className="text-muted-foreground">{members.length} member{members.length !== 1 ? 's' : ''} in {orgName}</p>
             </div>
-            {isOwner && (
-              <Button onClick={() => setShowInvite(true)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                Invite Member
-              </Button>
-            )}
+            <Button onClick={() => setShowInvite(true)}>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Invite Member
+            </Button>
           </div>
 
           {/* Search & View Toggle */}
@@ -224,7 +222,7 @@ export default function MembersPage() {
           )}
 
           {/* Invite Dialog - reuse MemberManagement for invite functionality */}
-          {showInvite && isOwner && orgId && (
+          {showInvite && orgId && (
             <div className="fixed inset-0 z-50 bg-background/80 flex items-center justify-center p-4" onClick={() => setShowInvite(false)}>
               <div className="bg-background border rounded-lg shadow-lg max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-4">
