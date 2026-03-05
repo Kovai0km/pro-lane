@@ -248,7 +248,7 @@ export function FileCommentsPanel({
       </div>
 
       {/* Comments List */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <ScrollArea className="flex-1 p-4 max-h-[500px]" ref={scrollRef}>
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
