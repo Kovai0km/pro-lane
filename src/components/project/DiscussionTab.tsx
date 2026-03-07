@@ -198,7 +198,8 @@ export function DiscussionTab({
   };
 
   const getMentionDisplayName = (member: Profile) => {
-    return member.username || member.full_name || member.email.split('@')[0];
+    // Always prefer username for mentions (single word, no spaces)
+    return member.username || member.email.split('@')[0];
   };
 
   const handleMentionSelect = (member: Profile) => {
