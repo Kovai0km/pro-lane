@@ -11,6 +11,7 @@ interface FileUploadProps {
   type: 'attachment' | 'output';
   onUploadComplete?: (file: UploadedFile) => void;
   compact?: boolean;
+  buttonOnly?: boolean;
 }
 
 interface UploadedFile {
