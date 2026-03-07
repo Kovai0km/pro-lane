@@ -8,7 +8,6 @@ const WORKFLOW_STEPS = [
   { status: 'assigned', label: 'Assigned', role: 'owner', icon: Crown },
   { status: 'on_progress', label: 'In Progress', role: 'assignee', icon: Wrench },
   { status: 'review', label: 'Review', role: 'reviewer', icon: Eye },
-  { status: 'completed', label: 'Completed', role: 'reviewer', icon: Eye },
   { status: 'approved', label: 'Approved', role: 'approver', icon: Shield },
   { status: 'delivered', label: 'Delivered', role: 'owner', icon: Crown },
   { status: 'closed', label: 'Closed', role: 'owner', icon: Crown },
