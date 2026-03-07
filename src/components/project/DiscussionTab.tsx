@@ -317,14 +317,16 @@ export function DiscussionTab({
   });
 
   const renderContentWithMentions = (content: string) => {
+    // Match @username (single word mentions)
     const mentionRegex = /@(\w+)/g;
     const parts = content.split(mentionRegex);
     return parts.map((part, i) => {
       if (i % 2 === 1) {
-        const isSelf = members.find(m =>
+        const mentionedMember = members.find(m =>
           m.username?.toLowerCase() === part.toLowerCase() ||
-          m.full_name?.toLowerCase() === part.toLowerCase()
-        )?.id === user?.id;
+          m.email.split('@')[0].toLowerCase() === part.toLowerCase()
+        );
+        const isSelf = mentionedMember?.id === user?.id;
         return (
           <span key={i} className={cn(
             "text-primary font-medium italic",
