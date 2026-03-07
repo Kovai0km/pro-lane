@@ -389,7 +389,6 @@ export function MemberManagement({ organizationId, isOwner }: MemberManagementPr
               </Tabs>
             </DialogContent>
           </Dialog>
-        )}
       </div>
 
       <div className="space-y-2">

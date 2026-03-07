@@ -160,6 +160,31 @@ const ProjectCodeBadge = ({ code }: { code: string }) => {
   );
 };
 
+function DescriptionBlock({ text }: { text: string | null }) {
+  const [expanded, setExpanded] = useState(false);
+  const desc = text || 'No description';
+  const isLong = desc.split('\n').length > 2 || desc.length > 200;
+
+  return (
+    <div>
+      <p className={cn(
+        "text-muted-foreground whitespace-pre-wrap break-words",
+        !expanded && isLong && "line-clamp-2"
+      )}>
+        {desc}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs text-primary hover:underline mt-1"
+        >
+          {expanded ? 'Show less' : 'Read more'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const { user, loading: authLoading } = useAuth();

@@ -216,12 +216,13 @@ export function FileManager({ projectId, type, onRefresh }: FileManagerProps) {
       {/* File List Panel */}
       <ResizablePanel defaultSize={35} minSize={25}>
         <div className="flex flex-col h-full">
-          <div className="p-3 border-b">
+          <div className="p-2 border-b">
             <FileUpload
               projectId={projectId}
               type={type === 'resources' ? 'attachment' : 'output'}
               onUploadComplete={() => fetchFiles()}
               compact
+              buttonOnly
             />
           </div>
 

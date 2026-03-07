@@ -56,8 +56,7 @@ export function AppSidebar() {
   useEffect(() => { if (user) { fetchOrganizations(); fetchProfile(); } }, [user]);
   useEffect(() => {
     if (orgId && organizations.length > 0) setCurrentOrg(organizations.find(o => o.id === orgId) || null);
-    else if (organizations.length > 0 && !orgId) setCurrentOrg(organizations[0]);
-    else setCurrentOrg(null);
+    else if (organizations.length > 0 && !orgId && !currentOrg) setCurrentOrg(organizations[0]);
   }, [orgId, organizations]);
   useEffect(() => { if (currentOrg && user) { fetchTeams(); fetchDirectMessages(); fetchRecentProjects(); checkAdmin(); } }, [currentOrg, user]);
 
