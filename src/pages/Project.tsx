@@ -618,9 +618,7 @@ export default function ProjectPage() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-muted-foreground whitespace-pre-wrap break-words">
-                    {project.description || 'No description'}
-                  </p>
+                  <DescriptionBlock text={project.description} />
                   <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4" />
