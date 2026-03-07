@@ -30,7 +30,7 @@ interface FileWithProgress {
   error?: string;
 }
 
-export function FileUpload({ projectId, type, onUploadComplete, compact = false }: FileUploadProps) {
+export function FileUpload({ projectId, type, onUploadComplete, compact = false, buttonOnly = false }: FileUploadProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [files, setFiles] = useState<FileWithProgress[]>([]);
