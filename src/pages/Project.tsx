@@ -389,9 +389,11 @@ export default function ProjectPage() {
 
     setStatusUpdating(true);
     try {
+      // Ensure lowercase to match DB enum
+      const safeStatus = newStatus.toLowerCase();
       const { error } = await supabase
         .from('projects')
-        .update({ status: newStatus as any })
+        .update({ status: safeStatus as any })
         .eq('id', project.id);
 
       if (error) throw error;
