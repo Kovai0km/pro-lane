@@ -215,9 +215,67 @@ export function DiscussionTab({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
-    await onSubmitComment(newComment.trim(), null);
+    const commentContent = newComment.trim();
+    await onSubmitComment(commentContent, null);
+    // Trigger notifications for mentioned users
+    await triggerMentionNotifications(commentContent);
     setNewComment('');
     fetchActivityLog();
+  };
+
+  const triggerMentionNotifications = async (content: string) => {
+    if (!user) return;
+    const mentionRegex = /@(\w+)/g;
+    let match;
+    const mentionedUsernames = new Set<string>();
+    while ((match = mentionRegex.exec(content)) !== null) {
+      mentionedUsernames.add(match[1].toLowerCase());
+    }
+    if (mentionedUsernames.size === 0) return;
+
+    // Find mentioned users from members list
+    for (const username of mentionedUsernames) {
+      const mentionedMember = members.find(m =>
+        m.username?.toLowerCase() === username ||
+        m.email.split('@')[0].toLowerCase() === username
+      );
+      if (mentionedMember && mentionedMember.id !== user.id) {
+        // Get current user profile for the notification
+        const { data: myProfile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user.id)
+          .single();
+        const senderName = myProfile?.full_name || myProfile?.username || 'Someone';
+        
+        // Create notification
+        await supabase.from('notifications').insert({
+          user_id: mentionedMember.id,
+          type: 'mention',
+          title: `${senderName} mentioned you`,
+          message: content.length > 100 ? content.slice(0, 100) + '...' : content,
+          link: `/project/${projectId}`,
+        });
+
+        // Create mention record
+        // We need the comment id — fetch the latest comment by this user
+        const { data: latestComment } = await supabase
+          .from('comments')
+          .select('id')
+          .eq('project_id', projectId)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latestComment) {
+          await supabase.from('mentions').insert({
+            comment_id: latestComment.id,
+            mentioned_user_id: mentionedMember.id,
+          });
+        }
+      }
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
