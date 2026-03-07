@@ -8,7 +8,6 @@ const PROJECT_STATUSES = [
   { value: 'on_progress', label: 'On Progress', color: 'bg-yellow-500' },
   { value: 'review', label: 'Review', color: 'bg-purple-500' },
   { value: 'revision', label: 'Revision', color: 'bg-orange-500' },
-  { value: 'completed', label: 'Completed', color: 'bg-green-500' },
   { value: 'approved', label: 'Approved', color: 'bg-teal-500' },
   { value: 'delivered', label: 'Delivered', color: 'bg-emerald-500' },
   { value: 'closed', label: 'Closed', color: 'bg-slate-500' },
