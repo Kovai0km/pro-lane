@@ -222,7 +222,6 @@ export function FileManager({ projectId, type, onRefresh }: FileManagerProps) {
               type={type === 'resources' ? 'attachment' : 'output'}
               onUploadComplete={() => fetchFiles()}
               compact
-              buttonOnly
             />
           </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';

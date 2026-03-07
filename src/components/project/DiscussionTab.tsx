@@ -268,7 +268,7 @@ export function DiscussionTab({
         )?.id === user?.id;
         return (
           <span key={i} className={cn(
-            "text-primary font-medium",
+            "text-primary font-medium italic",
             isSelf && "bg-primary/10 px-0.5 rounded"
           )}>
             @{part}
