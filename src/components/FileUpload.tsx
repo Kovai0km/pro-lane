@@ -184,35 +184,49 @@ export function FileUpload({ projectId, type, onUploadComplete, compact = false,
 
   return (
     <div className={compact ? "space-y-2" : "space-y-4"}>
-      {/* Drop Zone */}
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`border-2 border-dashed text-center transition-colors ${
-          compact ? 'p-4' : 'p-8'
-        } ${
-          isDragging
-            ? 'border-foreground bg-secondary'
-            : 'border-foreground/50 hover:border-foreground'
-        }`}
-      >
-        <Upload className={`${compact ? 'h-5 w-5 mb-2' : 'h-8 w-8 mb-4'} mx-auto text-muted-foreground`} />
-        <p className={`text-muted-foreground ${compact ? 'text-xs mb-1' : 'text-sm mb-2'}`}>
-          {compact ? 'Drop files or' : 'Drag and drop files here, or'}
-        </p>
-        <label>
+      {/* Drop Zone or Button Only */}
+      {buttonOnly ? (
+        <label className="w-full">
           <input
             type="file"
             multiple
             onChange={handleFileSelect}
             className="hidden"
           />
-          <Button variant="outline" size="sm" asChild>
-            <span className="cursor-pointer">{compact ? 'Browse' : 'Browse Files'}</span>
+          <Button variant="outline" size="sm" className="w-full gap-2 cursor-pointer" asChild>
+            <span><Upload className="h-4 w-4" />Upload {type === 'attachment' ? 'Resource' : 'Deliverable'}</span>
           </Button>
         </label>
-      </div>
+      ) : (
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed text-center transition-colors ${
+            compact ? 'p-4' : 'p-8'
+          } ${
+            isDragging
+              ? 'border-foreground bg-secondary'
+              : 'border-foreground/50 hover:border-foreground'
+          }`}
+        >
+          <Upload className={`${compact ? 'h-5 w-5 mb-2' : 'h-8 w-8 mb-4'} mx-auto text-muted-foreground`} />
+          <p className={`text-muted-foreground ${compact ? 'text-xs mb-1' : 'text-sm mb-2'}`}>
+            {compact ? 'Drop files or' : 'Drag and drop files here, or'}
+          </p>
+          <label>
+            <input
+              type="file"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <Button variant="outline" size="sm" asChild>
+              <span className="cursor-pointer">{compact ? 'Browse' : 'Browse Files'}</span>
+            </Button>
+          </label>
+        </div>
+      )}
 
       {/* File List */}
       {files.length > 0 && (
