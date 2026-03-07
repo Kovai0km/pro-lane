@@ -288,8 +288,7 @@ export function MemberManagement({ organizationId, isOwner }: MemberManagementPr
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Members ({members.length})</h3>
-        {isOwner && (
-          <Dialog open={inviteDialogOpen} onOpenChange={(open) => {
+        <Dialog open={inviteDialogOpen} onOpenChange={(open) => {
             setInviteDialogOpen(open);
             if (!open) { setInviteNonUser(false); setInviteEmail(''); setBulkEmails(''); }
           }}>
@@ -390,7 +389,6 @@ export function MemberManagement({ organizationId, isOwner }: MemberManagementPr
               </Tabs>
             </DialogContent>
           </Dialog>
-        )}
       </div>
 
       <div className="space-y-2">

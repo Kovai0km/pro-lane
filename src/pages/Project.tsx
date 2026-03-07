@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -101,9 +102,8 @@ const STATUS_ROLE_MAP: Record<string, { allowedBy: WorkflowRole; transitions: st
   draft: { allowedBy: 'owner', transitions: ['assigned'] },
   assigned: { allowedBy: 'assignee', transitions: ['on_progress'] },
   on_progress: { allowedBy: 'assignee', transitions: ['review'] },
-  review: { allowedBy: 'reviewer', transitions: ['revision', 'completed'] },
+  review: { allowedBy: 'reviewer', transitions: ['revision', 'approved'] },
   revision: { allowedBy: 'assignee', transitions: ['on_progress', 'review'] },
-  completed: { allowedBy: 'reviewer', transitions: ['approved'] },
   approved: { allowedBy: 'approver', transitions: ['delivered'] },
   delivered: { allowedBy: 'owner', transitions: ['closed'] },
   closed: { allowedBy: 'owner', transitions: [] },
@@ -160,6 +160,31 @@ const ProjectCodeBadge = ({ code }: { code: string }) => {
     </button>
   );
 };
+
+function DescriptionBlock({ text }: { text: string | null }) {
+  const [expanded, setExpanded] = useState(false);
+  const desc = text || 'No description';
+  const isLong = desc.split('\n').length > 2 || desc.length > 200;
+
+  return (
+    <div>
+      <p className={cn(
+        "text-muted-foreground whitespace-pre-wrap break-words",
+        !expanded && isLong && "line-clamp-2"
+      )}>
+        {desc}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs text-primary hover:underline mt-1"
+        >
+          {expanded ? 'Show less' : 'Read more'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -379,7 +404,6 @@ export default function ProjectPage() {
         on_progress: 'Work has started. The owner will be notified.',
         review: 'Submitted for review. The reviewer will be notified.',
         revision: 'Changes requested. The assignee will be notified.',
-        completed: 'Work completed! The reviewer can now approve.',
         approved: 'Approved! The approver can now deliver.',
         delivered: 'Project delivered. The owner will be notified.',
         closed: 'Project closed and archived.',
@@ -620,9 +644,7 @@ export default function ProjectPage() {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-muted-foreground whitespace-pre-wrap break-words">
-                    {project.description || 'No description'}
-                  </p>
+                  <DescriptionBlock text={project.description} />
                   <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4" />
