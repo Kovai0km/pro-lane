@@ -55,8 +55,18 @@ export function AppSidebar() {
 
   useEffect(() => { if (user) { fetchOrganizations(); fetchProfile(); } }, [user]);
   useEffect(() => {
-    if (orgId && organizations.length > 0) setCurrentOrg(organizations.find(o => o.id === orgId) || null);
-    else if (organizations.length > 0 && !orgId && !currentOrg) setCurrentOrg(organizations[0]);
+    if (orgId && organizations.length > 0) {
+      const org = organizations.find(o => o.id === orgId) || null;
+      setCurrentOrg(org);
+      if (org) localStorage.setItem('lastOrgId', org.id);
+    } else if (organizations.length > 0 && !orgId) {
+      // Preserve current org when navigating away from org routes (e.g., to /project/:id)
+      if (!currentOrg) {
+        const lastOrgId = localStorage.getItem('lastOrgId');
+        const lastOrg = lastOrgId ? organizations.find(o => o.id === lastOrgId) : null;
+        setCurrentOrg(lastOrg || organizations[0]);
+      }
+    }
   }, [orgId, organizations]);
   useEffect(() => { if (currentOrg && user) { fetchTeams(); fetchDirectMessages(); fetchRecentProjects(); checkAdmin(); } }, [currentOrg, user]);
 
@@ -245,7 +255,7 @@ export function AppSidebar() {
                         {recentProjects.map(project => (
                           <SidebarMenuItem key={project.id}>
                             <SidebarMenuButton asChild isActive={location.pathname === `/project/${project.id}`} className="text-xs">
-                              <Link to={`/project/${project.id}`}>
+                              <Link to={`/project/${project.id}`} onClick={(e) => { e.preventDefault(); navigate(`/project/${project.id}`); }}>
                                 <span className="text-muted-foreground font-mono text-[10px]">{project.project_code || '—'}</span>
                                 <span className="truncate">{project.title}</span>
                               </Link>
