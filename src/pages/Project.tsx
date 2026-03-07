@@ -378,7 +378,6 @@ export default function ProjectPage() {
         on_progress: 'Work has started. The owner will be notified.',
         review: 'Submitted for review. The reviewer will be notified.',
         revision: 'Changes requested. The assignee will be notified.',
-        completed: 'Work completed! The reviewer can now approve.',
         approved: 'Approved! The approver can now deliver.',
         delivered: 'Project delivered. The owner will be notified.',
         closed: 'Project closed and archived.',
