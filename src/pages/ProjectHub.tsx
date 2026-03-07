@@ -64,7 +64,7 @@ const STATUSES = [
   { value: 'on_progress', label: 'On Progress' },
   { value: 'review', label: 'Review' },
   { value: 'revision', label: 'Revision' },
-  { value: 'completed', label: 'Completed' },
+  { value: 'approved', label: 'Approved' },
   { value: 'delivered', label: 'Delivered' },
   { value: 'closed', label: 'Closed' },
 ];

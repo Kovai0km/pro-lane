@@ -328,7 +328,7 @@ export default function ProjectPage() {
         .update({
           title: editedProject.title,
           description: editedProject.description,
-          status: editedProject.status as any,
+          status: (editedProject.status || 'draft').toLowerCase() as any,
           due_date: editedProject.due_date,
         })
         .eq('id', project.id);

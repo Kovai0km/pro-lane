@@ -245,7 +245,7 @@ export function AppSidebar() {
                         {recentProjects.map(project => (
                           <SidebarMenuItem key={project.id}>
                             <SidebarMenuButton asChild isActive={location.pathname === `/project/${project.id}`} className="text-xs">
-                              <Link to={`/project/${project.id}`}>
+                              <Link to={`/project/${project.id}`} onClick={(e) => { e.preventDefault(); navigate(`/project/${project.id}`); }}>
                                 <span className="text-muted-foreground font-mono text-[10px]">{project.project_code || '—'}</span>
                                 <span className="truncate">{project.title}</span>
                               </Link>
