@@ -329,11 +329,14 @@ export default function ProjectPage() {
           title: editedProject.title,
           description: editedProject.description,
           status: (editedProject.status || 'draft').toLowerCase() as any,
-          due_date: editedProject.due_date,
+          due_date: editedProject.due_date || null,
         })
         .eq('id', project.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Save project error:', error);
+        throw error;
+      }
 
       setProject({ ...project, ...editedProject });
       setEditing(false);
