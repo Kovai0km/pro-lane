@@ -43,7 +43,7 @@ interface Project {
 const STATUS_SECTIONS = [
   { key: 'my_drafts', label: 'My Drafts', statuses: ['draft'], icon: Archive, description: 'Projects you created but not yet assigned' },
   { key: 'assigned_to_me', label: 'Assigned to Me', statuses: ['assigned'], icon: Users, description: 'Tasks assigned to you awaiting action' },
-  { key: 'in_progress', label: 'Active Tasks', statuses: ['on_progress', 'in_progress'], icon: Clock, description: 'Work currently in progress' },
+  { key: 'on_progress', label: 'Active Tasks', statuses: ['on_progress', 'on_progress'], icon: Clock, description: 'Work currently in progress' },
   { key: 'pending_review', label: 'Pending Review', statuses: ['review'], icon: AlertTriangle, description: 'Submitted for review' },
   { key: 'needs_revision', label: 'Needs Revision', statuses: ['revision'], icon: ArrowDown, description: 'Changes requested' },
   { key: 'completed', label: 'Completed', statuses: ['completed'], icon: CheckCircle2, description: 'Completed and ready for approval' },

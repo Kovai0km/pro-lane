@@ -163,7 +163,7 @@ export default function OrganizationPage() {
   const getStatusVariant = (status: string) => {
     const variants: Record<string, 'pending' | 'in-progress' | 'review' | 'completed'> = {
       pending: 'pending',
-      in_progress: 'in-progress',
+      on_progress: 'in-progress',
       review: 'review',
       completed: 'completed',
     };
@@ -391,7 +391,7 @@ export default function OrganizationPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {projects.filter(p => p.status === 'in_progress' || p.status === 'on_progress').length}
+                    {projects.filter(p => p.status === 'on_progress' || p.status === 'on_progress').length}
                   </p>
                   <p className="text-sm text-muted-foreground">Active</p>
                 </div>

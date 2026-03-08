@@ -15,10 +15,10 @@ const WORKFLOW_STEPS = [
 
 const REVISION_STATUS = 'revision';
 
-// Map pending/in_progress to their workflow equivalents
+// Map pending/on_progress to their workflow equivalents
 const STATUS_ALIAS: Record<string, string> = {
   pending: 'draft',
-  in_progress: 'on_progress',
+  on_progress: 'on_progress',
 };
 
 interface WorkflowStepperProps {

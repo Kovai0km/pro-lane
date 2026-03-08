@@ -984,7 +984,7 @@ export type Database = {
       project_role: "owner" | "editor" | "viewer"
       project_status:
         | "pending"
-        | "in_progress"
+        | "on_progress"
         | "review"
         | "completed"
         | "draft"
@@ -1127,7 +1127,7 @@ export const Constants = {
       project_role: ["owner", "editor", "viewer"],
       project_status: [
         "pending",
-        "in_progress",
+        "on_progress",
         "review",
         "completed",
         "draft",

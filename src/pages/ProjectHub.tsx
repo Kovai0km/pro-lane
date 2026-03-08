@@ -204,6 +204,7 @@ export default function ProjectHub() {
           priority: newProject.priority,
           due_date: newProject.due_date || null,
           created_by: user.id,
+          status: 'draft',
         })
         .select('*, organizations(name)')
         .single();
