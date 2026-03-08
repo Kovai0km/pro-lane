@@ -391,17 +391,17 @@ export default function ProjectPage() {
     try {
       // Ensure lowercase to match DB enum
       const safeStatus = newStatus.toLowerCase();
-      console.log('Updating status to:', safeStatus, 'for project:', project.id);
-      const { error, data } = await supabase
+      const { error } = await supabase
         .from('projects')
         .update({ status: safeStatus as any })
-        .eq('id', project.id)
-        .select();
+        .eq('id', project.id);
 
-      console.log('Status update result:', { error, data });
-      if (error) throw error;
+      if (error) {
+        console.error('Status update error:', error);
+        throw error;
+      }
 
-      setProject({ ...project, status: newStatus });
+      setProject({ ...project, status: safeStatus });
 
       // Workflow-aware toast messages
       const workflowMessages: Record<string, string> = {
