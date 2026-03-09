@@ -1,144 +1,79 @@
 
-## Analysis Summary
+# ProOrbit Application Analysis
 
-### Issues Found
+## Errors Found
 
-**1. Build Errors:**
-- `src/pages/Project.tsx` line 111: Duplicate `on_progress` key in `STATUS_ROLE_MAP` (lines 104 and 111)
-- Edge function `send-payment-success`: Import error for `npm:resend` - needs proper Deno import syntax
+### 1. Console Warning: DialogFooter ref issue
+The `DialogFooter` component in `dialog.tsx` is a plain function component (not wrapped in `React.forwardRef`), but something is trying to pass a ref to it in the Dashboard page. This causes a React warning in the console.
 
-**2. ENUM Error (Console):**
-- Error: `"invalid input value for enum project_status: \"Draft\""`
-- The label "Draft" (capitalized) is being sent instead of the value "draft" (lowercase)
+**Fix:** Wrap `DialogFooter` (and `DialogHeader`) with `React.forwardRef` in `src/components/ui/dialog.tsx`.
 
-**3. Code Redundancy in Dashboard:**
-- Line 46 has `['on_progress', 'on_progress']` - redundant duplicate
+### 2. Razorpay SDK not loaded
+The Billing page calls `new (window as any).Razorpay(options)` but there is no `<script>` tag loading the Razorpay checkout SDK (`https://checkout.razorpay.com/v1/checkout.js`). This will crash at runtime when a user tries to upgrade.
+
+**Fix:** Add the Razorpay script tag to `index.html`, or dynamically load it before opening the payment modal.
+
+### 3. Avatar upload uses private bucket with `getPublicUrl`
+The `project-files` storage bucket is **not public**, yet the Profile page uses `getPublicUrl()` to generate avatar URLs. These URLs will return 400/403 errors, so avatars will never display.
+
+**Fix:** Either make the bucket public, create a dedicated public `avatars` bucket, or use signed URLs for avatar display.
+
+### 4. Missing `Chat` page import
+`App.tsx` imports `const Chat = lazy(() => import("./pages/Chat"))` but there is no `src/pages/Chat.tsx` file listed -- it exists as the default export of `ChatPage` in the file. The import path should work, but the component exports as `ChatPage` not as a default. Need to verify this doesn't cause issues at runtime.
 
 ---
 
-## Implementation Plan
+## Security Issues (from scan)
 
-### 1. Fix Build Error - Duplicate Key in Project.tsx
+### Critical
+1. **Profiles table publicly readable** -- The RLS policy `Users can view all profiles` uses condition `true`, exposing all user emails to anyone. Restrict SELECT to authenticated users within the same organizations.
+2. **Project invitation tokens exposed** -- `Anyone can view invitation by token` policy with condition `true` allows attackers to enumerate and steal invitation tokens. Restrict to checking by specific token value or invited email.
 
-**File:** `src/pages/Project.tsx` (lines 101-112)
+### Warnings
+3. **Leaked password protection disabled** -- Enable leaked password protection in auth settings.
+4. **Extension in public schema** -- The `pg_trgm` extension is installed in the `public` schema instead of a dedicated `extensions` schema.
+5. **Payments table missing INSERT policy** -- Could allow forged payment records.
+6. **Subscriptions table missing write policies** -- No INSERT/UPDATE/DELETE policies for subscriptions.
 
-Remove the duplicate `on_progress` entry at line 111. The correct map should be:
+---
 
-```typescript
-const STATUS_ROLE_MAP: Record<string, { allowedBy: WorkflowRole; transitions: string[] }> = {
-  draft: { allowedBy: 'owner', transitions: ['assigned'] },
-  assigned: { allowedBy: 'assignee', transitions: ['on_progress'] },
-  on_progress: { allowedBy: 'assignee', transitions: ['review'] },
-  review: { allowedBy: 'reviewer', transitions: ['revision', 'approved'] },
-  revision: { allowedBy: 'assignee', transitions: ['on_progress', 'review'] },
-  approved: { allowedBy: 'approver', transitions: ['delivered'] },
-  delivered: { allowedBy: 'owner', transitions: ['closed'] },
-  closed: { allowedBy: 'owner', transitions: [] },
-  pending: { allowedBy: 'owner', transitions: ['assigned', 'draft'] },
-};
-```
+## Features to Implement / Improvements
 
-### 2. Fix ENUM Error - Enhanced Status Change Handler
+### High Priority
+1. **Protected routes** -- There is no route guard redirecting unauthenticated users away from `/dashboard`, `/profile`, `/billing`, etc. Any unauthenticated user can navigate to these routes directly and see broken states.
+2. **Email verification flow** -- Signup appears to auto-confirm and immediately redirect to dashboard. Users should verify their email first, or at minimum a confirmation message should be shown.
+3. **Error boundaries** -- No React error boundaries exist. A crash in any component takes down the entire app.
 
-**File:** `src/pages/Project.tsx`
+### Medium Priority
+4. **Razorpay script loading** -- As noted in errors above.
+5. **Storage bucket access** -- Fix avatar URLs with proper signed URL approach.
+6. **Mobile sidebar** -- The sidebar (`AppSidebar`) has chat sections hidden when collapsed, but no mobile drawer/sheet for navigation on small screens beyond the basic mobile menu in the Header.
+7. **Org deletion cleanup** -- The `org_delete_otp` table and `send-delete-otp` edge function exist, but need to verify the full deletion flow works end-to-end.
 
-Update `handleStatusChange` to show specific database error messages and ensure lowercase:
-
-```typescript
-const handleStatusChange = async (newStatus: string) => {
-  if (!project) return;
-
-  // Validate and normalize status
-  const safeStatus = newStatus.toLowerCase();
-  const validStatuses = ['draft', 'assigned', 'on_progress', 'review', 'revision', 'approved', 'delivered', 'closed', 'pending'];
-  
-  if (!validStatuses.includes(safeStatus)) {
-    toast({
-      title: 'Invalid Status',
-      description: `"${newStatus}" is not a valid status. Please select a valid status.`,
-      variant: 'destructive',
-    });
-    return;
-  }
-
-  setStatusUpdating(true);
-  try {
-    const { error } = await supabase
-      .from('projects')
-      .update({ status: safeStatus as any })
-      .eq('id', project.id);
-
-    if (error) {
-      // Show specific database error
-      toast({
-        title: 'Database Error',
-        description: `Status update failed: ${error.message}`,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setProject({ ...project, status: safeStatus });
-    toast({
-      title: `Status → ${getStatusLabel(safeStatus)}`,
-      description: workflowMessages[safeStatus] || 'Status updated successfully.',
-    });
-  } catch (error: any) {
-    toast({
-      title: 'Error',
-      description: error.message || 'Failed to update status.',
-      variant: 'destructive',
-    });
-  } finally {
-    setStatusUpdating(false);
-  }
-};
-```
-
-### 3. Fix Dashboard Duplicate Status
-
-**File:** `src/pages/Dashboard.tsx` (line 46)
-
-Change from:
-```typescript
-{ key: 'on_progress', label: 'Active Tasks', statuses: ['on_progress', 'on_progress'], ...}
-```
-
-To:
-```typescript
-{ key: 'on_progress', label: 'Active Tasks', statuses: ['on_progress'], ...}
-```
-
-### 4. Fix Edge Function Import
-
-**File:** `supabase/functions/send-payment-success/index.ts`
-
-Change the import from:
-```typescript
-import { Resend } from "npm:resend@2.0.0";
-```
-
-To the proper JSR import:
-```typescript
-import { Resend } from "https://esm.sh/resend@2.0.0";
-```
+### Low Priority
+8. **Search functionality** -- `GlobalSearch` component exists but would benefit from debouncing and better empty-state handling.
+9. **Notification real-time updates** -- Notifications are fetched once; consider adding realtime subscriptions.
+10. **Pagination** -- Recent projects on dashboard are limited to 6, but there is no "View All" or pagination for large datasets.
 
 ---
 
 ## Technical Details
 
-### Files to Modify
-
+### Files to modify:
 | File | Change |
 |------|--------|
-| `src/pages/Project.tsx` | Remove duplicate `on_progress` key, enhance error handling |
-| `src/pages/Dashboard.tsx` | Fix duplicate status in array |
-| `supabase/functions/send-payment-success/index.ts` | Fix Resend import syntax |
+| `src/components/ui/dialog.tsx` | Wrap `DialogFooter` and `DialogHeader` with `React.forwardRef` |
+| `index.html` | Add Razorpay checkout.js script tag |
+| `src/pages/Profile.tsx` | Replace `getPublicUrl` with signed URL approach for avatars |
+| `src/App.tsx` | Add a `ProtectedRoute` wrapper component for authenticated routes |
+| Database migration | Fix RLS policies on `profiles` and `project_invitations` tables |
+| Database migration | Add write policies for `payments` and `subscriptions` tables |
 
-### Validation Flow
-1. User clicks status dropdown
-2. `handleStatusChange(status.value)` called with lowercase value
-3. Function validates against whitelist
-4. If invalid → show error toast with details
-5. If Supabase error → show database error message
-6. If success → update UI and show success toast
+### Implementation order:
+1. Fix DialogFooter ref warning (quick fix)
+2. Fix RLS security issues (critical)
+3. Add protected routes (high priority)
+4. Fix avatar URL handling (functional bug)
+5. Add Razorpay script loading (payment flow)
+6. Add error boundaries (stability)
+7. Remaining improvements as needed

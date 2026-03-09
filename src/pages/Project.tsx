@@ -108,7 +108,6 @@ const STATUS_ROLE_MAP: Record<string, { allowedBy: WorkflowRole; transitions: st
   delivered: { allowedBy: 'owner', transitions: ['closed'] },
   closed: { allowedBy: 'owner', transitions: [] },
   pending: { allowedBy: 'owner', transitions: ['assigned', 'draft'] },
-  on_progress: { allowedBy: 'assignee', transitions: ['review'] },
 };
 
 // Helper Components
@@ -418,8 +417,8 @@ export default function ProjectPage() {
       };
 
       toast({
-        title: `Status → ${getStatusLabel(newStatus)}`,
-        description: workflowMessages[newStatus] || `Project status changed to ${getStatusLabel(newStatus)}`,
+        title: `Status → ${getStatusLabel(safeStatus)}`,
+        description: workflowMessages[safeStatus] || `Project status changed to ${getStatusLabel(safeStatus)}`,
       });
     } catch (error: any) {
       toast({
