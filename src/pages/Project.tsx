@@ -108,7 +108,6 @@ const STATUS_ROLE_MAP: Record<string, { allowedBy: WorkflowRole; transitions: st
   delivered: { allowedBy: 'owner', transitions: ['closed'] },
   closed: { allowedBy: 'owner', transitions: [] },
   pending: { allowedBy: 'owner', transitions: ['assigned', 'draft'] },
-  on_progress: { allowedBy: 'assignee', transitions: ['review'] },
 };
 
 // Helper Components
