@@ -391,7 +391,7 @@ export default function OrganizationPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {projects.filter(p => p.status === 'on_progress' || p.status === 'on_progress').length}
+                    {projects.filter(p => p.status === 'on_progress').length}
                   </p>
                   <p className="text-sm text-muted-foreground">Active</p>
                 </div>

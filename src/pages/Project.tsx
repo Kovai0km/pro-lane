@@ -417,8 +417,8 @@ export default function ProjectPage() {
       };
 
       toast({
-        title: `Status → ${getStatusLabel(newStatus)}`,
-        description: workflowMessages[newStatus] || `Project status changed to ${getStatusLabel(newStatus)}`,
+        title: `Status → ${getStatusLabel(safeStatus)}`,
+        description: workflowMessages[safeStatus] || `Project status changed to ${getStatusLabel(safeStatus)}`,
       });
     } catch (error: any) {
       toast({
