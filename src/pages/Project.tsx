@@ -389,10 +389,21 @@ export default function ProjectPage() {
   const handleStatusChange = async (newStatus: string) => {
     if (!project) return;
 
+    // Validate and normalize status to lowercase enum value
+    const safeStatus = newStatus.toLowerCase();
+    const validStatuses = ['draft', 'assigned', 'on_progress', 'review', 'revision', 'approved', 'delivered', 'closed', 'pending', 'in_progress', 'completed'];
+    
+    if (!validStatuses.includes(safeStatus)) {
+      toast({
+        title: 'Invalid Status',
+        description: `"${newStatus}" is not a valid project status.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setStatusUpdating(true);
     try {
-      // Ensure lowercase to match DB enum
-      const safeStatus = newStatus.toLowerCase();
       const { error } = await supabase
         .from('projects')
         .update({ status: safeStatus as any })
