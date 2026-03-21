@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 const PROJECT_STATUSES = [
   { value: 'pending', label: 'Pending', color: 'bg-gray-400' },
   { value: 'draft', label: 'Draft', color: 'bg-gray-500' },
+  { value: 'in_progress', label: 'In Progress', color: 'bg-yellow-400' },
   { value: 'assigned', label: 'Assigned', color: 'bg-blue-500' },
   { value: 'on_progress', label: 'On Progress', color: 'bg-yellow-500' },
   { value: 'review', label: 'Review', color: 'bg-purple-500' },
