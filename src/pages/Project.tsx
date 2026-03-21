@@ -327,7 +327,7 @@ export default function ProjectPage() {
         .update({
           title: editedProject.title,
           description: editedProject.description,
-          status: (editedProject.status || 'draft').toLowerCase() as any,
+         status: (editedProject.status || 'pending') as any,
           due_date: editedProject.due_date || null,
         })
         .eq('id', project.id);
@@ -386,12 +386,12 @@ export default function ProjectPage() {
     return config?.allowedBy === userRole && config.transitions.length > 0;
   };
 
-  const handleStatusChange = async (newStatus: string) => {
+const handleStatusChange = async (newStatus: string) => {
     if (!project) return;
 
-    // Validate and normalize status to lowercase enum value
     const safeStatus = newStatus.toLowerCase();
-    const validStatuses = ['draft', 'assigned', 'on_progress', 'review', 'revision', 'approved', 'delivered', 'closed', 'pending', 'in_progress', 'completed'];
+    // ✅ These EXACTLY match your Supabase enum — no in_progress, no completed
+    const validStatuses = ['pending', 'draft', 'assigned', 'on_progress', 'review', 'revision', 'approved', 'delivered', 'closed'];
     
     if (!validStatuses.includes(safeStatus)) {
       toast({
