@@ -86,7 +86,9 @@ export default function ProjectHub() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+ const [searchQuery, setSearchQuery] = useState('');
+const [debouncedSearch, setDebouncedSearch] = useState('');
+const [projectsLoading, setProjectsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [jobTypeFilter, setJobTypeFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -112,19 +114,36 @@ export default function ProjectHub() {
     localStorage.setItem('projectHubView', viewMode);
   }, [viewMode]);
 
-  useEffect(() => {
-    if (user) {
-      setLoading(true);
-      const fetches: Promise<void>[] = [fetchProjects(), fetchTeams()];
-      if (orgId) fetches.push(fetchOrganization());
-      Promise.all(fetches).finally(() => setLoading(false));
-    }
-  }, [user, orgId, currentPage, statusFilter, jobTypeFilter, priorityFilter, sortBy, searchQuery]);
+useEffect(() => {
+  const timer = setTimeout(() => setDebouncedSearch(searchQuery), 400);
+  return () => clearTimeout(timer);
+}, [searchQuery]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [statusFilter, jobTypeFilter, priorityFilter, searchQuery]);
+useEffect(() => {
+  if (user) {
+    // Only show full skeleton on initial load or org change
+    const isInitial = projects.length === 0;
+    if (isInitial) setLoading(true);
+    else setProjectsLoading(true);
+
+    const fetches: Promise<void>[] = [fetchProjects(), fetchTeams()];
+    if (orgId) fetches.push(fetchOrganization());
+    Promise.all(fetches).finally(() => {
+      setLoading(false);
+      setProjectsLoading(false);
+    });
+  }
+}, [user, orgId, currentPage, statusFilter, jobTypeFilter, priorityFilter, sortBy, debouncedSearch]);
+
+// Reset page when filters change
+useEffect(() => {
+  setCurrentPage(1);
+}, [statusFilter, jobTypeFilter, priorityFilter, debouncedSearch]);
+
+
+
+
+  
 
   const fetchOrganization = async () => {
     if (!orgId) return;
@@ -141,9 +160,9 @@ export default function ProjectHub() {
       if (statusFilter !== 'all') query = query.eq('status', statusFilter as any);
       if (jobTypeFilter !== 'all') query = query.eq('job_type', jobTypeFilter as any);
       if (priorityFilter !== 'all') query = query.eq('priority', priorityFilter as any);
-      if (searchQuery.trim()) {
-        query = query.or(`title.ilike.%${searchQuery}%,project_code.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-      }
+     if (debouncedSearch.trim()) {
+  query = query.or(`title.ilike.%${debouncedSearch}%,project_code.ilike.%${debouncedSearch}%,description.ilike.%${debouncedSearch}%`);
+}
 
       // Sort
       const ascending = sortBy === 'title' || sortBy === 'due_date';
@@ -405,7 +424,12 @@ export default function ProjectHub() {
             </div>
           </CardContent>
         </Card>
-
+{projectsLoading && (
+  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <Loader2 className="h-4 w-4 animate-spin" />
+    Updating...
+  </div>
+)}
         {/* Projects */}
         {projects.length === 0 ? (
           <Card className="border-dashed">
