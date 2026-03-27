@@ -33,7 +33,6 @@ const PROJECT_STATUSES = [
   { value: 'pending', label: 'Pending' },
   { value: 'draft', label: 'Draft' },
   { value: 'assigned', label: 'Assigned' },
-  { value: 'in_progress', label: 'In Progress' },
   { value: 'on_progress', label: 'On Progress' },
   { value: 'review', label: 'Review' },
   { value: 'revision', label: 'Revision' },
