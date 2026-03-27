@@ -101,7 +101,7 @@ type WorkflowRole = 'owner' | 'assignee' | 'reviewer' | 'approver';
 const STATUS_ROLE_MAP: Record<string, { allowedBy: WorkflowRole; transitions: string[] }> = {
   draft: { allowedBy: 'owner', transitions: ['assigned'] },
   assigned: { allowedBy: 'assignee', transitions: ['on_progress'] },
-  on_progress: { allowedBy: 'assignee', transitions: ['review'] },
+  in_progress: { allowedBy: 'assignee', transitions: ['on_progress', 'review'] },
   review: { allowedBy: 'reviewer', transitions: ['revision', 'approved'] },
   revision: { allowedBy: 'assignee', transitions: ['on_progress', 'review'] },
   approved: { allowedBy: 'approver', transitions: ['delivered'] },
